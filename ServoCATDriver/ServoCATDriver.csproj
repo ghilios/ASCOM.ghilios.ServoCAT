@@ -58,7 +58,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>LocalServer.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>Resources\LocalServer.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ASCOM.Astrometry, Version=6.0.0.0, Culture=neutral, PublicKeyToken=565de7938946fba7, processorArchitecture=MSIL" />
@@ -84,7 +84,7 @@
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
     <Compile Include="Service\Utility\GarbageCollection.cs" />
-    <Compile Include="LocalServer.cs" />
+    <Compile Include="Service\LocalServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <SubType>Designer</SubType>
@@ -104,13 +104,12 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ASCOM.ico" />
-    <Content Include="ASCOM.png" />
-    <Content Include="ReadMe.htm" />
+    <Content Include="Resources\ASCOM.ico" />
+    <Content Include="Resources\ASCOM.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="LocalServer.snk" />
+    <None Include="Resources\LocalServer.snk" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
