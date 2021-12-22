@@ -1,3 +1,15 @@
+#region "copyright"
+
+/*
+    Copyright © 2021 - 2021 George Hilios <ghilios+NINA@googlemail.com>
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#endregion "copyright"
+
 //
 // ASCOM.Joko.ServoCAT.Telescope Local COM Server
 //
@@ -13,6 +25,7 @@
 //
 //
 using ASCOM;
+using ASCOM.Joko.ServoCAT.Service.Utility;
 using ASCOM.Utilities;
 using Microsoft.Win32;
 using System;
@@ -28,7 +41,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ASCOM.LocalServer {
+namespace ASCOM.Joko.ServoCAT {
+
     public static class Server {
 
         #region Variables
@@ -55,7 +69,7 @@ namespace ASCOM.LocalServer {
         /// </summary>
         /// <param name="args">Command line parameters</param>
         [STAThread]
-        static void Main(string[] args) {
+        private static void Main(string[] args) {
             // Create a trace logger for the local server.
             TL = new TraceLogger("", "ASCOM.LocalServer") {
                 Enabled = true // Enable to debug local server operation (not usually required). Drivers have their own independent trace loggers.
@@ -111,7 +125,6 @@ namespace ASCOM.LocalServer {
 
             TL.LogMessage("Main", $"Local server closing");
             TL.Dispose();
-
         }
 
         #endregion
@@ -119,7 +132,7 @@ namespace ASCOM.LocalServer {
         #region Server Lock, Object Counting, and AutoQuit on COM start-up
 
         /// <summary>
-        /// Returns the total number of objects alive currently. 
+        /// Returns the total number of objects alive currently.
         /// </summary>
         public static int ObjectCount {
             get {
@@ -130,7 +143,7 @@ namespace ASCOM.LocalServer {
         }
 
         /// <summary>
-        /// Performs a thread-safe incrementation of the object count. 
+        /// Performs a thread-safe incrementation of the object count.
         /// </summary>
         /// <returns></returns>
         public static int IncrementObjectCount() {
@@ -163,7 +176,7 @@ namespace ASCOM.LocalServer {
         }
 
         /// <summary>
-        /// Performs a thread-safe incrementation of the server lock count. 
+        /// Performs a thread-safe incrementation of the server lock count.
         /// </summary>
         /// <returns></returns>
         public static int IncrementServerLockCount() {
@@ -218,7 +231,7 @@ namespace ASCOM.LocalServer {
 
             try {
                 // Get the types contained within the local server assembly
-                Assembly so = Assembly.GetExecutingAssembly(); // Get the local server assembly 
+                Assembly so = Assembly.GetExecutingAssembly(); // Get the local server assembly
                 Type[] types = so.GetTypes(); // Get the types in the assembly
 
                 // Iterate over the types identifying those which are drivers
@@ -259,7 +272,7 @@ namespace ASCOM.LocalServer {
         /// </summary>
         /// <remarks>
         /// Do everything to register this for COM. Never use REGASM on this exe assembly! It would create InProcServer32 entries which would prevent proper activation!
-        /// Using the list of COM object types generated during dynamic assembly loading, this method registers each driver for COM and registers it for ASCOM. 
+        /// Using the list of COM object types generated during dynamic assembly loading, this method registers each driver for COM and registers it for ASCOM.
         /// It also adds DCOM info for the local server itself, so it can be activated via an outbound connection from TheSky.
         /// </remarks>
         private static void RegisterObjects() {
@@ -555,7 +568,7 @@ namespace ASCOM.LocalServer {
             TL.LogMessage("StartGarbageCollection", $"Creating garbage collector with interval: {interval} seconds");
             GarbageCollection garbageCollector = new GarbageCollection(interval);
 
-            // Create a cancellation token and start the garbage collection task 
+            // Create a cancellation token and start the garbage collection task
             TL.LogMessage("StartGarbageCollection", $"Starting garbage collector thread");
             GCTokenSource = new CancellationTokenSource();
             GCTask = Task.Factory.StartNew(() => garbageCollector.GCWatch(GCTokenSource.Token), GCTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -584,11 +597,11 @@ namespace ASCOM.LocalServer {
 
         // Post a Windows Message to a specific thread (identified by its thread id). Used to post a WM_QUIT message to the main thread in order to terminate this application.)
         [DllImport("user32.dll")]
-        static extern bool PostThreadMessage(uint idThread, uint Msg, UIntPtr wParam, IntPtr lParam);
+        private static extern bool PostThreadMessage(uint idThread, uint Msg, UIntPtr wParam, IntPtr lParam);
 
         // Obtain the thread id of the calling thread allowing us to post the WM_QUIT message to the main thread.
         [DllImport("kernel32.dll")]
-        static extern uint GetCurrentThreadId();
+        private static extern uint GetCurrentThreadId();
 
         #endregion
     }

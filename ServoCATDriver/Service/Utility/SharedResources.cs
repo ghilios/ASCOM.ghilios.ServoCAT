@@ -1,15 +1,26 @@
+#region "copyright"
+
+/*
+    Copyright © 2021 - 2021 George Hilios <ghilios+NINA@googlemail.com>
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#endregion "copyright"
+
 //
 // ================
 // Shared Resources
 // ================
 //
 // This class is a container for all shared resources that may be needed
-// by the drivers served by the Local Server. 
+// by the drivers served by the Local Server.
 //
 // NOTES:
 //
 //	* ALL DECLARATIONS MUST BE STATIC HERE!! INSTANCES OF THIS CLASS MUST NEVER BE CREATED!
-
 
 using ASCOM;
 using ASCOM.Utilities;
@@ -17,18 +28,21 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ASCOM.LocalServer {
+namespace ASCOM.Joko.ServoCAT.Service.Utility {
+
     /// <summary>
     /// The resources shared by all drivers and devices, in this example it's a serial port with a shared SendMessage method an idea for locking the message and handling connecting is given.
     /// In reality extensive changes will probably be needed. Multiple drivers means that several applications connect to the same hardware device, aka a hub.
     /// Multiple devices means that there are more than one instance of the hardware, such as two focusers. In this case there needs to be multiple instances of the hardware connector, each with it's own connection count.
     /// </summary>
     public static class SharedResources {
+
         // Object used for locking to prevent multiple drivers accessing common code at the same time
         private static readonly object lockObject = new object();
 
         // Shared serial port. This will allow multiple drivers to use one single serial port.
         private static Serial sharedSerial = new Serial();      // Shared serial port
+
         private static int serialConnectionCount = 0;     // counter for the number of connections to the serial port
 
         // Public access to shared resources
@@ -154,7 +168,6 @@ namespace ASCOM.LocalServer {
         }
 
         #endregion
-
     }
 
     /// <summary>

@@ -1,8 +1,21 @@
+#region "copyright"
+
+/*
+    Copyright © 2021 - 2021 George Hilios <ghilios+NINA@googlemail.com>
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#endregion "copyright"
+
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-namespace ASCOM.LocalServer {
+namespace ASCOM.Joko.ServoCAT.Service.Utility {
+
     #region C# Definition of IClassFactory
 
     /// <summary>
@@ -13,7 +26,9 @@ namespace ASCOM.LocalServer {
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]       // Indicate that this interface is not IDispatch-based.
     [Guid("00000001-0000-0000-C000-000000000046")]              // This GUID is the actual GUID of IClassFactory.
     public interface IClassFactory {
+
         void CreateInstance(IntPtr pUnkOuter, ref Guid riid, out IntPtr ppvObject);
+
         void LockServer(bool fLock);
     }
 
@@ -28,10 +43,11 @@ namespace ASCOM.LocalServer {
 
         // Define two common GUID objects for public usage.
         public static Guid IID_IUnknown = new Guid("{00000000-0000-0000-C000-000000000046}");
+
         public static Guid IID_IDispatch = new Guid("{00020400-0000-0000-C000-000000000046}");
 
         [Flags]
-        enum CLSCTX : uint {
+        private enum CLSCTX : uint {
             CLSCTX_INPROC_SERVER = 0x1,
             CLSCTX_INPROC_HANDLER = 0x2,
             CLSCTX_LOCAL_SERVER = 0x4,
@@ -56,7 +72,7 @@ namespace ASCOM.LocalServer {
         }
 
         [Flags]
-        enum REGCLS : uint {
+        private enum REGCLS : uint {
             REGCLS_SINGLEUSE = 0,
             REGCLS_MULTIPLEUSE = 1,
             REGCLS_MULTI_SEPARATE = 2,
@@ -68,16 +84,16 @@ namespace ASCOM.LocalServer {
         /// Register a Class Factory into COM's internal table of Class Factories.
         /// </summary>
         [DllImport("ole32.dll")]
-        static extern int CoRegisterClassObject([In] ref Guid rclsid, [MarshalAs(UnmanagedType.IUnknown)] object pUnk, uint dwClsContext, uint flags, out uint lpdwRegister);
+        private static extern int CoRegisterClassObject([In] ref Guid rclsid, [MarshalAs(UnmanagedType.IUnknown)] object pUnk, uint dwClsContext, uint flags, out uint lpdwRegister);
 
         /// <summary>
-        /// Called by a COM EXE Server that can register multiple class objects to inform COM about all registered classes, and permits activation requests for those class objects. 
+        /// Called by a COM EXE Server that can register multiple class objects to inform COM about all registered classes, and permits activation requests for those class objects.
         /// </summary>
         /// <remarks>
         /// This function causes OLE to inform the SCM about all the registered classes, and begins letting activation requests into the server process.
         /// </remarks>
         [DllImport("ole32.dll")]
-        static extern int CoResumeClassObjects();
+        private static extern int CoResumeClassObjects();
 
         /// <summary>
         /// Prevents  new activation requests from the SCM on all class objects registered within the process.
@@ -86,13 +102,13 @@ namespace ASCOM.LocalServer {
         /// Even though a process may call this API, the process still must call CoRevokeClassObject for each CLSID it has registered, in the apartment it registered in.
         /// </remarks>
         [DllImport("ole32.dll")]
-        static extern int CoSuspendClassObjects();
+        private static extern int CoSuspendClassObjects();
 
         /// <summary>
         /// Unregister a Class Factory from COM's internal table of Class Factories.
         /// </summary>
         [DllImport("ole32.dll")]
-        static extern int CoRevokeClassObject(uint dwRegister);
+        private static extern int CoRevokeClassObject(uint dwRegister);
 
         #endregion
 
@@ -169,12 +185,13 @@ namespace ASCOM.LocalServer {
             int i = CoSuspendClassObjects();
             return (i == 0);
         }
+
         #endregion
 
         #region IClassFactory Implementations
 
         /// <summary>
-        ///Implement creation of the type and interface. 
+        ///Implement creation of the type and interface.
         /// </summary>
         void IClassFactory.CreateInstance(IntPtr pUnkOuter, ref Guid riid, out IntPtr ppvObject) {
             IntPtr nullPtr = new IntPtr(0);
@@ -212,6 +229,5 @@ namespace ASCOM.LocalServer {
         }
 
         #endregion
-
     }
 }

@@ -8,7 +8,7 @@
     <ProjectGuid>{C708E487-E3A9-4073-A545-294B88674225}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ASCOM.LocalServer.Server</RootNamespace>
+    <RootNamespace>ASCOM.Joko.ServoCAT</RootNamespace>
     <AssemblyName>ASCOM.Joko.ServoCAT</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileUpgradeFlags>
@@ -74,7 +74,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClassFactory.cs" />
+    <Compile Include="Service\Utility\ClassFactory.cs" />
     <Compile Include="Telescope\TelescopeDriver.cs" />
     <Compile Include="Telescope\Rates.cs" />
     <Compile Include="frmMain.cs">
@@ -83,21 +83,21 @@
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="GarbageCollection.cs" />
+    <Compile Include="Service\Utility\GarbageCollection.cs" />
     <Compile Include="LocalServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="frmMain.resx">
       <SubType>Designer</SubType>
       <DependentUpon>frmMain.cs</DependentUpon>
     </EmbeddedResource>
-    <Compile Include="ReferenceCountedObject.cs" />
+    <Compile Include="Service\Utility\ReferenceCountedObject.cs" />
     <Compile Include="Telescope\SetupDialogForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Telescope\SetupDialogForm.designer.cs">
       <DependentUpon>SetupDialogForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="SharedResources.cs" />
+    <Compile Include="Service\Utility\SharedResources.cs" />
     <EmbeddedResource Include="Telescope\SetupDialogForm.resx">
       <DependentUpon>SetupDialogForm.cs</DependentUpon>
       <SubType>Designer</SubType>

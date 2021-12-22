@@ -1,31 +1,29 @@
-//tabs=4
-// TODO fill in this information for your driver, then remove this line!
-//
-// ASCOM Telescope driver for Joko.ServoCAT
-//
-// Description:	 <To be completed by driver developer>
-//
-// Implements:	ASCOM Telescope interface version: <To be completed by driver developer>
-// Author:		(XXX) Your N. Here <your@email.here>
-//
+#region "copyright"
 
-using ASCOM;
+/*
+    Copyright © 2021 - 2021 George Hilios <ghilios+NINA@googlemail.com>
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#endregion "copyright"
+
 using ASCOM.Astrometry;
 using ASCOM.Astrometry.AstroUtils;
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.DeviceInterface;
-using ASCOM.LocalServer;
+using ASCOM.Joko.ServoCAT.Service.Utility;
 using ASCOM.Utilities;
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Forms;
 
 namespace ASCOM.Joko.ServoCAT.Telescope {
+
     //
     // Your driver's DeviceID is ASCOM.Joko.ServoCAT.Telescope
     //
@@ -33,21 +31,16 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
     // The ClassInterface/None attribute prevents an empty interface called
     // _Joko.ServoCAT from being created and used as the [default] interface
     //
-    // TODO Replace the not implemented exceptions with code to implement the function or
-    // throw the appropriate ASCOM exception.
-    //
-
-    /// <summary>
-    /// ASCOM Telescope Driver for Joko.ServoCAT.
-    /// </summary>
     [ComVisible(true)]
     [Guid("02891d62-2316-476e-93ad-bb4bea5ac154")]
     [ProgId("ASCOM.Joko.ServoCAT.Telescope")]
-    [ServedClassName("ASCOM Telescope Driver for Joko.ServoCAT")] // Driver description that appears in the Chooser, customise as required
+    [ServedClassName("ServoCAT Driver, by George Hilios")]
     [ClassInterface(ClassInterfaceType.None)]
     public class Telescope : ReferenceCountedObjectBase, ITelescopeV3 {
+
         // Constants used for Profile persistence
         internal const string comPortProfileName = "COM Port";
+
         internal const string comPortDefault = "COM1";
         internal const string traceStateProfileName = "Trace Level";
         internal const string traceStateDefault = "true";
@@ -90,7 +83,6 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                 tl.LogMessageCrLf("Telescope", $"Initialisation exception: {ex}");
                 MessageBox.Show($"{ex.Message}", "Exception creating ASCOM.Joko.ServoCAT.Telescope", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
         }
 
         // PUBLIC COM INTERFACE ITelescopeV3 IMPLEMENTATION
@@ -236,6 +228,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         #endregion
 
         #region ITelescope Implementation
+
         public void AbortSlew() {
             tl.LogMessage("AbortSlew", "Not implemented");
             throw new MethodNotImplementedException("AbortSlew");
@@ -755,13 +748,14 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         #endregion
 
         #region Private properties and methods
+
         // here are some useful properties and methods that can be used as required
         // to help with driver development
 
         #region ASCOM Registration
 
         // Register or unregister driver for ASCOM. This is harmless if already
-        // registered or unregistered. 
+        // registered or unregistered.
         //
         /// <summary>
         /// Register or unregister the driver with the ASCOM Platform.
@@ -879,6 +873,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             var msg = string.Format(message, args);
             tl.LogMessage(identifier, msg);
         }
+
         #endregion
     }
 }

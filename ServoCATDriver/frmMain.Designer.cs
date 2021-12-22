@@ -1,6 +1,6 @@
 using System;
 
-namespace ASCOM.LocalServer {
+namespace ASCOM.Joko.ServoCAT {
     partial class FrmMain {
         /// <summary>
         /// Required designer variable.
