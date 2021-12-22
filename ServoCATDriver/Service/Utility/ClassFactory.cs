@@ -219,13 +219,11 @@ namespace ASCOM.Joko.ServoCAT.Service.Utility {
 
         void IClassFactory.LockServer(bool incrementLockCount) {
             if (incrementLockCount) {
-                Server.IncrementServerLockCount();
+                LocalServerApp.App.IncrementServerLockCount();
             } else {
-                Server.DecrementServerLockLock();
+                LocalServerApp.App.DecrementServerLockLock();
             }
-
-            // Check whether we need to shutdown the server application.
-            Server.ExitIf();
+            LocalServerApp.App.ExitIf();
         }
 
         #endregion

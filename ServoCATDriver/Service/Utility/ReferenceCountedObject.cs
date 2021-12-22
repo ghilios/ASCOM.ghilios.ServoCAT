@@ -10,7 +10,6 @@
 
 #endregion "copyright"
 
-using System;
 using System.Runtime.InteropServices;
 
 namespace ASCOM.Joko.ServoCAT.Service.Utility {
@@ -19,16 +18,12 @@ namespace ASCOM.Joko.ServoCAT.Service.Utility {
     public class ReferenceCountedObjectBase {
 
         public ReferenceCountedObjectBase() {
-            // We increment the global count of objects.
-            Server.IncrementObjectCount();
+            LocalServerApp.App.IncrementObjectCount();
         }
 
         ~ReferenceCountedObjectBase() {
-            // We decrement the global count of objects.
-            Server.DecrementObjectCount();
-            // We then immediately test to see if we the conditions
-            // are right to attempt to terminate this server application.
-            Server.ExitIf();
+            LocalServerApp.App.DecrementObjectCount();
+            LocalServerApp.App.ExitIf();
         }
     }
 }
