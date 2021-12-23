@@ -61,6 +61,16 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>Resources\LocalServer.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug Register COM|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug Register COM\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="ASCOM.Astrometry, Version=6.0.0.0, Culture=neutral, PublicKeyToken=565de7938946fba7, processorArchitecture=MSIL" />
     <Reference Include="ASCOM.Attributes, Version=6.0.0.0, Culture=neutral, PublicKeyToken=565de7938946fba7, processorArchitecture=MSIL" />
@@ -76,39 +86,41 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Astrometry\AstrometryOptions.cs" />
+    <Compile Include="Interfaces\IAstrometryOptions.cs" />
+    <Compile Include="Interfaces\IMainVM.cs" />
+    <Compile Include="Interfaces\IServoCatOptions.cs" />
     <Compile Include="Service\LocalServerApp.xaml.cs">
       <DependentUpon>LocalServerApp.xaml</DependentUpon>
     </Compile>
     <Compile Include="Service\Utility\ClassFactory.cs" />
+    <Compile Include="Telescope\ServoCatOptions.cs" />
     <Compile Include="Telescope\TelescopeDriver.cs" />
     <Compile Include="Telescope\Rates.cs" />
     <Compile Include="Service\Utility\GarbageCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utility\BaseINPC.cs" />
+    <Compile Include="Utility\CustomWindow.cs" />
+    <Compile Include="Utility\RelayCommand.cs" />
+    <Compile Include="Utility\WindowService.cs" />
+    <Compile Include="Utility\WPFExtensions.cs" />
     <Compile Include="ViewModel\BaseVM.cs" />
+    <Compile Include="ViewModel\SetupVM.cs" />
     <Compile Include="View\Main.xaml.cs">
       <DependentUpon>Main.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModel\MainVM.cs" />
     <Compile Include="Service\Utility\ReferenceCountedObject.cs" />
-    <Compile Include="Telescope\SetupDialogForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Telescope\SetupDialogForm.designer.cs">
-      <DependentUpon>SetupDialogForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Service\Utility\SharedResources.cs" />
-    <EmbeddedResource Include="Telescope\SetupDialogForm.resx">
-      <DependentUpon>SetupDialogForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
+    <Compile Include="View\Setup.xaml.cs">
+      <DependentUpon>Setup.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\ASCOM.ico" />
@@ -141,7 +153,15 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
+    <Page Include="Resources\DataTemplates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\Main.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Setup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

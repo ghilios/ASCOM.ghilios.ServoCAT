@@ -10,10 +10,14 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Utility;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.Joko.ServoCAT.Interfaces {
 
-    public class BaseVM : BaseINPC {
+    public interface IServoCatOptions {
     }
 }

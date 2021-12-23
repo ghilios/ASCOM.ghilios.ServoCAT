@@ -1,7 +1,7 @@
 #region "copyright"
 
 /*
-    Copyright © 2021 - 2021 George Hilios <ghilios+NINA@googlemail.com>
+    Copyright © 2021 - 2021 George Hilios <ghilios+SERVOCAT@googlemail.com>
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,13 +14,17 @@ using ASCOM.Astrometry;
 using ASCOM.Astrometry.AstroUtils;
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.DeviceInterface;
+using ASCOM.Joko.ServoCAT.Astrometry;
+using ASCOM.Joko.ServoCAT.Interfaces;
 using ASCOM.Joko.ServoCAT.Service.Utility;
+using ASCOM.Joko.ServoCAT.Utility;
+using ASCOM.Joko.ServoCAT.ViewModel;
 using ASCOM.Utilities;
 using System;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
+using System.Windows;
 
 namespace ASCOM.Joko.ServoCAT.Telescope {
 
@@ -37,6 +41,9 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
     [ServedClassName("ServoCAT Driver, by George Hilios")]
     [ClassInterface(ClassInterfaceType.None)]
     public class Telescope : ReferenceCountedObjectBase, ITelescopeV3 {
+        private Profile ascomProfile = new Profile();
+        private readonly IServoCatOptions servoCatOptions;
+        private readonly IAstrometryOptions astrometryOptions;
 
         // Constants used for Profile persistence
         internal const string comPortProfileName = "COM Port";
@@ -45,43 +52,54 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         internal const string traceStateProfileName = "Trace Level";
         internal const string traceStateDefault = "true";
 
-        internal static string driverID; // ASCOM DeviceID (COM ProgID) for this driver, the value is retrieved from the ServedClassName attribute in the class initialiser.
-        internal static string driverDescription; // The value is retrieved from the ServedClassName attribute in the class initialiser.
         internal static string comPort; // Variable to hold the COM port if required
-        internal static bool connectedState; // variable to hold the connected state
-        internal static Util utilities; // Private variable to hold an ASCOM Utilities object
-        internal static AstroUtils astroUtilities; // Variable to hold an ASCOM AstroUtilities object to provide the Range method
-        internal static TraceLogger tl; // Variable to hold the trace logger object (creates a diagnostic log file with information that you specify)
+
+        private static readonly string driverID;
+        private static readonly string driverDescription;
+        private bool connectedState;
+        private Util ascomUtilities;
+        private AstroUtils astroUtilities;
+        private TraceLogger Logger;
+
+        static Telescope() {
+            var attr = Attribute.GetCustomAttribute(typeof(Telescope), typeof(ProgIdAttribute));
+            driverID = ((ProgIdAttribute)attr).Value;
+
+            attr = Attribute.GetCustomAttribute(typeof(Telescope), typeof(ServedClassNameAttribute));
+            driverDescription = ((ServedClassNameAttribute)attr).DisplayName;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Joko.ServoCAT"/> class. Must be public to successfully register for COM.
         /// </summary>
         public Telescope() {
             try {
-                // Pull the ProgID from the ProgID class attribute.
-                Attribute attr = Attribute.GetCustomAttribute(this.GetType(), typeof(ProgIdAttribute));
-                driverID = ((ProgIdAttribute)attr).Value ?? "PROGID NOT SET!";  // Get the driver ProgIDfrom the ProgID attribute.
+                if (string.IsNullOrEmpty(driverID)) {
+                    throw new ASCOM.DriverException("ProgID is not set");
+                }
 
-                // Pull the display name from the ServedClassName class attribute.
-                attr = Attribute.GetCustomAttribute(this.GetType(), typeof(ServedClassNameAttribute));
-                driverDescription = ((ServedClassNameAttribute)attr).DisplayName ?? "DISPLAY NAME NOT SET!";  // Get the driver description that displays in the ASCOM Chooser from the ServedClassName attribute.
+                if (string.IsNullOrEmpty(driverDescription)) {
+                    throw new ASCOM.DriverException("DriverDescription is not set");
+                }
 
-                tl = new TraceLogger("", "ASCOM.Joko.ServoCAT.Telescope");
+                this.ascomProfile = new Profile();
+                this.servoCatOptions = new ServoCatOptions(ascomProfile);
+                this.astrometryOptions = new AstrometryOptions(ascomProfile);
+
+                Logger = new TraceLogger("", "ASCOM.Joko.ServoCAT.Telescope");
                 ReadProfile(); // Read device configuration from the ASCOM Profile store, including the trace state
 
-                tl.LogMessage("Telescope", "Starting initialisation");
-                tl.LogMessage("Telescope", $"ProgID: {driverID}, Description: {driverDescription}");
+                Logger.LogMessage("Telescope", "Starting initialization");
+                Logger.LogMessage("Telescope", $"ProgID: {driverID}, Description: {driverDescription}");
 
-                connectedState = false; // Initialise connected to false
-                utilities = new Util(); //Initialise util object
-                astroUtilities = new AstroUtils(); // Initialise astro-utilities object
+                connectedState = false;
+                ascomUtilities = new Util();
+                astroUtilities = new AstroUtils();
 
-                //TODO: Implement your additional construction here
-
-                tl.LogMessage("Telescope", "Completed initialisation");
+                Logger.LogMessage("Telescope", "Completed initialization");
             } catch (Exception ex) {
-                tl.LogMessageCrLf("Telescope", $"Initialisation exception: {ex}");
-                MessageBox.Show($"{ex.Message}", "Exception creating ASCOM.Joko.ServoCAT.Telescope", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Logger.LogMessageCrLf("Telescope", $"Initialization exception: {ex}");
+                throw;
             }
         }
 
@@ -98,20 +116,23 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public void SetupDialog() {
             // consider only showing the setup dialogue if not connected
             // or call a different dialogue if connected
-            if (IsConnected)
+            if (IsConnected) {
                 MessageBox.Show("Already connected, just press OK");
+            }
 
-            using (SetupDialogForm F = new SetupDialogForm(tl)) {
-                var result = F.ShowDialog();
-                if (result == DialogResult.OK) {
-                    WriteProfile(); // Persist device configuration values to the ASCOM Profile store
-                }
+            var windowService = new WindowService();
+            try {
+                var setupVM = new SetupVM(this.astrometryOptions, this.servoCatOptions);
+                var result = windowService.ShowDialog(setupVM, "ServoCAT Options", windowStyle: WindowStyle.ToolWindow);
+                result.Wait();
+            } finally {
+                _ = windowService.Close();
             }
         }
 
         public ArrayList SupportedActions {
             get {
-                tl.LogMessage("SupportedActions Get", "Returning empty arraylist");
+                Logger.LogMessage("SupportedActions Get", "Returning empty arraylist");
                 return new ArrayList();
             }
         }
@@ -150,14 +171,17 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         }
 
         public void Dispose() {
-            // Clean up the trace logger and util objects
-            tl.Enabled = false;
-            tl.Dispose();
-            tl = null;
-            utilities.Dispose();
-            utilities = null;
-            astroUtilities.Dispose();
+            if (Logger != null) {
+                Logger.Enabled = false;
+                Logger.Dispose();
+                Logger = null;
+            }
+            ascomUtilities?.Dispose();
+            ascomUtilities = null;
+            astroUtilities?.Dispose();
             astroUtilities = null;
+            ascomProfile?.Dispose();
+            ascomProfile = null;
         }
 
         public bool Connected {
@@ -166,7 +190,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                 return IsConnected;
             }
             set {
-                tl.LogMessage("Connected", "Set {0}", value);
+                Logger.LogMessage("Connected", "Set {0}", value);
                 if (value == IsConnected)
                     return;
 
@@ -183,9 +207,8 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         }
 
         public string Description {
-            // TODO customise this device description
             get {
-                tl.LogMessage("Description Get", driverDescription);
+                Logger.LogMessage("Description Get", driverDescription);
                 return driverDescription;
             }
         }
@@ -195,7 +218,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                 Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 // TODO customise this driver description
                 string driverInfo = "Information about the driver itself. Version: " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
-                tl.LogMessage("DriverInfo Get", driverInfo);
+                Logger.LogMessage("DriverInfo Get", driverInfo);
                 return driverInfo;
             }
         }
@@ -204,13 +227,12 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             get {
                 Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 string driverVersion = String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
-                tl.LogMessage("DriverVersion Get", driverVersion);
+                Logger.LogMessage("DriverVersion Get", driverVersion);
                 return driverVersion;
             }
         }
 
         public short InterfaceVersion {
-            // set by the driver wizard
             get {
                 LogMessage("InterfaceVersion Get", "3");
                 return Convert.ToInt16("3");
@@ -219,8 +241,8 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public string Name {
             get {
-                string name = "Short driver name - please customise";
-                tl.LogMessage("Name Get", name);
+                string name = "ServoCAT ASCOM Driver";
+                Logger.LogMessage("Name Get", name);
                 return name;
             }
         }
@@ -230,73 +252,73 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         #region ITelescope Implementation
 
         public void AbortSlew() {
-            tl.LogMessage("AbortSlew", "Not implemented");
+            Logger.LogMessage("AbortSlew", "Not implemented");
             throw new MethodNotImplementedException("AbortSlew");
         }
 
         public AlignmentModes AlignmentMode {
             get {
-                tl.LogMessage("AlignmentMode Get", "Not implemented");
+                Logger.LogMessage("AlignmentMode Get", "Not implemented");
                 throw new PropertyNotImplementedException("AlignmentMode", false);
             }
         }
 
         public double Altitude {
             get {
-                tl.LogMessage("Altitude", "Not implemented");
+                Logger.LogMessage("Altitude", "Not implemented");
                 throw new PropertyNotImplementedException("Altitude", false);
             }
         }
 
         public double ApertureArea {
             get {
-                tl.LogMessage("ApertureArea Get", "Not implemented");
+                Logger.LogMessage("ApertureArea Get", "Not implemented");
                 throw new PropertyNotImplementedException("ApertureArea", false);
             }
         }
 
         public double ApertureDiameter {
             get {
-                tl.LogMessage("ApertureDiameter Get", "Not implemented");
+                Logger.LogMessage("ApertureDiameter Get", "Not implemented");
                 throw new PropertyNotImplementedException("ApertureDiameter", false);
             }
         }
 
         public bool AtHome {
             get {
-                tl.LogMessage("AtHome", "Get - " + false.ToString());
+                Logger.LogMessage("AtHome", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool AtPark {
             get {
-                tl.LogMessage("AtPark", "Get - " + false.ToString());
+                Logger.LogMessage("AtPark", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public IAxisRates AxisRates(TelescopeAxes Axis) {
-            tl.LogMessage("AxisRates", "Get - " + Axis.ToString());
+            Logger.LogMessage("AxisRates", "Get - " + Axis.ToString());
             return new AxisRates(Axis);
         }
 
         public double Azimuth {
             get {
-                tl.LogMessage("Azimuth Get", "Not implemented");
+                Logger.LogMessage("Azimuth Get", "Not implemented");
                 throw new PropertyNotImplementedException("Azimuth", false);
             }
         }
 
         public bool CanFindHome {
             get {
-                tl.LogMessage("CanFindHome", "Get - " + false.ToString());
+                Logger.LogMessage("CanFindHome", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanMoveAxis(TelescopeAxes Axis) {
-            tl.LogMessage("CanMoveAxis", "Get - " + Axis.ToString());
+            Logger.LogMessage("CanMoveAxis", "Get - " + Axis.ToString());
             switch (Axis) {
                 case TelescopeAxes.axisPrimary: return false;
                 case TelescopeAxes.axisSecondary: return false;
@@ -307,105 +329,105 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public bool CanPark {
             get {
-                tl.LogMessage("CanPark", "Get - " + false.ToString());
+                Logger.LogMessage("CanPark", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanPulseGuide {
             get {
-                tl.LogMessage("CanPulseGuide", "Get - " + false.ToString());
+                Logger.LogMessage("CanPulseGuide", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSetDeclinationRate {
             get {
-                tl.LogMessage("CanSetDeclinationRate", "Get - " + false.ToString());
+                Logger.LogMessage("CanSetDeclinationRate", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSetGuideRates {
             get {
-                tl.LogMessage("CanSetGuideRates", "Get - " + false.ToString());
+                Logger.LogMessage("CanSetGuideRates", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSetPark {
             get {
-                tl.LogMessage("CanSetPark", "Get - " + false.ToString());
+                Logger.LogMessage("CanSetPark", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSetPierSide {
             get {
-                tl.LogMessage("CanSetPierSide", "Get - " + false.ToString());
+                Logger.LogMessage("CanSetPierSide", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSetRightAscensionRate {
             get {
-                tl.LogMessage("CanSetRightAscensionRate", "Get - " + false.ToString());
+                Logger.LogMessage("CanSetRightAscensionRate", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSetTracking {
             get {
-                tl.LogMessage("CanSetTracking", "Get - " + false.ToString());
+                Logger.LogMessage("CanSetTracking", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSlew {
             get {
-                tl.LogMessage("CanSlew", "Get - " + false.ToString());
+                Logger.LogMessage("CanSlew", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSlewAltAz {
             get {
-                tl.LogMessage("CanSlewAltAz", "Get - " + false.ToString());
+                Logger.LogMessage("CanSlewAltAz", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSlewAltAzAsync {
             get {
-                tl.LogMessage("CanSlewAltAzAsync", "Get - " + false.ToString());
+                Logger.LogMessage("CanSlewAltAzAsync", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSlewAsync {
             get {
-                tl.LogMessage("CanSlewAsync", "Get - " + false.ToString());
+                Logger.LogMessage("CanSlewAsync", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSync {
             get {
-                tl.LogMessage("CanSync", "Get - " + false.ToString());
+                Logger.LogMessage("CanSync", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanSyncAltAz {
             get {
-                tl.LogMessage("CanSyncAltAz", "Get - " + false.ToString());
+                Logger.LogMessage("CanSyncAltAz", "Get - " + false.ToString());
                 return false;
             }
         }
 
         public bool CanUnpark {
             get {
-                tl.LogMessage("CanUnpark", "Get - " + false.ToString());
+                Logger.LogMessage("CanUnpark", "Get - " + false.ToString());
                 return false;
             }
         }
@@ -413,7 +435,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public double Declination {
             get {
                 double declination = 0.0;
-                tl.LogMessage("Declination", "Get - " + utilities.DegreesToDMS(declination, ":", ":"));
+                Logger.LogMessage("Declination", "Get - " + ascomUtilities.DegreesToDMS(declination, ":", ":"));
                 return declination;
             }
         }
@@ -421,27 +443,27 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public double DeclinationRate {
             get {
                 double declination = 0.0;
-                tl.LogMessage("DeclinationRate", "Get - " + declination.ToString());
+                Logger.LogMessage("DeclinationRate", "Get - " + declination.ToString());
                 return declination;
             }
             set {
-                tl.LogMessage("DeclinationRate Set", "Not implemented");
+                Logger.LogMessage("DeclinationRate Set", "Not implemented");
                 throw new PropertyNotImplementedException("DeclinationRate", true);
             }
         }
 
         public PierSide DestinationSideOfPier(double RightAscension, double Declination) {
-            tl.LogMessage("DestinationSideOfPier Get", "Not implemented");
+            Logger.LogMessage("DestinationSideOfPier Get", "Not implemented");
             throw new PropertyNotImplementedException("DestinationSideOfPier", false);
         }
 
         public bool DoesRefraction {
             get {
-                tl.LogMessage("DoesRefraction Get", "Not implemented");
+                Logger.LogMessage("DoesRefraction Get", "Not implemented");
                 throw new PropertyNotImplementedException("DoesRefraction", false);
             }
             set {
-                tl.LogMessage("DoesRefraction Set", "Not implemented");
+                Logger.LogMessage("DoesRefraction Set", "Not implemented");
                 throw new PropertyNotImplementedException("DoesRefraction", true);
             }
         }
@@ -449,71 +471,71 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public EquatorialCoordinateType EquatorialSystem {
             get {
                 EquatorialCoordinateType equatorialSystem = EquatorialCoordinateType.equTopocentric;
-                tl.LogMessage("DeclinationRate", "Get - " + equatorialSystem.ToString());
+                Logger.LogMessage("DeclinationRate", "Get - " + equatorialSystem.ToString());
                 return equatorialSystem;
             }
         }
 
         public void FindHome() {
-            tl.LogMessage("FindHome", "Not implemented");
+            Logger.LogMessage("FindHome", "Not implemented");
             throw new MethodNotImplementedException("FindHome");
         }
 
         public double FocalLength {
             get {
-                tl.LogMessage("FocalLength Get", "Not implemented");
+                Logger.LogMessage("FocalLength Get", "Not implemented");
                 throw new PropertyNotImplementedException("FocalLength", false);
             }
         }
 
         public double GuideRateDeclination {
             get {
-                tl.LogMessage("GuideRateDeclination Get", "Not implemented");
+                Logger.LogMessage("GuideRateDeclination Get", "Not implemented");
                 throw new PropertyNotImplementedException("GuideRateDeclination", false);
             }
             set {
-                tl.LogMessage("GuideRateDeclination Set", "Not implemented");
+                Logger.LogMessage("GuideRateDeclination Set", "Not implemented");
                 throw new PropertyNotImplementedException("GuideRateDeclination", true);
             }
         }
 
         public double GuideRateRightAscension {
             get {
-                tl.LogMessage("GuideRateRightAscension Get", "Not implemented");
+                Logger.LogMessage("GuideRateRightAscension Get", "Not implemented");
                 throw new PropertyNotImplementedException("GuideRateRightAscension", false);
             }
             set {
-                tl.LogMessage("GuideRateRightAscension Set", "Not implemented");
+                Logger.LogMessage("GuideRateRightAscension Set", "Not implemented");
                 throw new PropertyNotImplementedException("GuideRateRightAscension", true);
             }
         }
 
         public bool IsPulseGuiding {
             get {
-                tl.LogMessage("IsPulseGuiding Get", "Not implemented");
+                Logger.LogMessage("IsPulseGuiding Get", "Not implemented");
                 throw new PropertyNotImplementedException("IsPulseGuiding", false);
             }
         }
 
         public void MoveAxis(TelescopeAxes Axis, double Rate) {
-            tl.LogMessage("MoveAxis", "Not implemented");
+            Logger.LogMessage("MoveAxis", "Not implemented");
             throw new MethodNotImplementedException("MoveAxis");
         }
 
         public void Park() {
-            tl.LogMessage("Park", "Not implemented");
+            Logger.LogMessage("Park", "Not implemented");
             throw new MethodNotImplementedException("Park");
         }
 
         public void PulseGuide(GuideDirections Direction, int Duration) {
-            tl.LogMessage("PulseGuide", "Not implemented");
+            Logger.LogMessage("PulseGuide", "Not implemented");
             throw new MethodNotImplementedException("PulseGuide");
         }
 
         public double RightAscension {
             get {
                 double rightAscension = 0.0;
-                tl.LogMessage("RightAscension", "Get - " + utilities.HoursToHMS(rightAscension));
+                Logger.LogMessage("RightAscension", "Get - " + ascomUtilities.HoursToHMS(rightAscension));
                 return rightAscension;
             }
         }
@@ -521,27 +543,27 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public double RightAscensionRate {
             get {
                 double rightAscensionRate = 0.0;
-                tl.LogMessage("RightAscensionRate", "Get - " + rightAscensionRate.ToString());
+                Logger.LogMessage("RightAscensionRate", "Get - " + rightAscensionRate.ToString());
                 return rightAscensionRate;
             }
             set {
-                tl.LogMessage("RightAscensionRate Set", "Not implemented");
+                Logger.LogMessage("RightAscensionRate Set", "Not implemented");
                 throw new PropertyNotImplementedException("RightAscensionRate", true);
             }
         }
 
         public void SetPark() {
-            tl.LogMessage("SetPark", "Not implemented");
+            Logger.LogMessage("SetPark", "Not implemented");
             throw new MethodNotImplementedException("SetPark");
         }
 
         public PierSide SideOfPier {
             get {
-                tl.LogMessage("SideOfPier Get", "Not implemented");
+                Logger.LogMessage("SideOfPier Get", "Not implemented");
                 throw new PropertyNotImplementedException("SideOfPier", false);
             }
             set {
-                tl.LogMessage("SideOfPier Set", "Not implemented");
+                Logger.LogMessage("SideOfPier Set", "Not implemented");
                 throw new PropertyNotImplementedException("SideOfPier", true);
             }
         }
@@ -552,7 +574,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
                 // Use NOVAS 3.1 to calculate the sidereal time
                 using (var novas = new NOVAS31()) {
-                    double julianDate = utilities.DateUTCToJulian(DateTime.UtcNow);
+                    double julianDate = ascomUtilities.DateUTCToJulian(DateTime.UtcNow);
                     novas.SiderealTime(julianDate, 0, novas.DeltaT(julianDate), GstType.GreenwichApparentSiderealTime, Method.EquinoxBased, Accuracy.Full, ref siderealTime);
                 }
 
@@ -570,125 +592,125 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                 // Reduce sidereal time to the range 0 to 24 hours
                 siderealTime = astroUtilities.ConditionRA(siderealTime);
 
-                tl.LogMessage("SiderealTime", "Get - " + siderealTime.ToString());
+                Logger.LogMessage("SiderealTime", "Get - " + siderealTime.ToString());
                 return siderealTime;
             }
         }
 
         public double SiteElevation {
             get {
-                tl.LogMessage("SiteElevation Get", "Not implemented");
+                Logger.LogMessage("SiteElevation Get", "Not implemented");
                 throw new PropertyNotImplementedException("SiteElevation", false);
             }
             set {
-                tl.LogMessage("SiteElevation Set", "Not implemented");
+                Logger.LogMessage("SiteElevation Set", "Not implemented");
                 throw new PropertyNotImplementedException("SiteElevation", true);
             }
         }
 
         public double SiteLatitude {
             get {
-                tl.LogMessage("SiteLatitude Get", "Not implemented");
+                Logger.LogMessage("SiteLatitude Get", "Not implemented");
                 throw new PropertyNotImplementedException("SiteLatitude", false);
             }
             set {
-                tl.LogMessage("SiteLatitude Set", "Not implemented");
+                Logger.LogMessage("SiteLatitude Set", "Not implemented");
                 throw new PropertyNotImplementedException("SiteLatitude", true);
             }
         }
 
         public double SiteLongitude {
             get {
-                tl.LogMessage("SiteLongitude Get", "Returning 0.0 to ensure that SiderealTime method is functional out of the box.");
+                Logger.LogMessage("SiteLongitude Get", "Returning 0.0 to ensure that SiderealTime method is functional out of the box.");
                 return 0.0;
             }
             set {
-                tl.LogMessage("SiteLongitude Set", "Not implemented");
+                Logger.LogMessage("SiteLongitude Set", "Not implemented");
                 throw new PropertyNotImplementedException("SiteLongitude", true);
             }
         }
 
-        public short SlewSettleTime {
+        public short SlewSetLoggereTime {
             get {
-                tl.LogMessage("SlewSettleTime Get", "Not implemented");
-                throw new PropertyNotImplementedException("SlewSettleTime", false);
+                Logger.LogMessage("SlewSetLoggereTime Get", "Not implemented");
+                throw new PropertyNotImplementedException("SlewSetLoggereTime", false);
             }
             set {
-                tl.LogMessage("SlewSettleTime Set", "Not implemented");
-                throw new PropertyNotImplementedException("SlewSettleTime", true);
+                Logger.LogMessage("SlewSetLoggereTime Set", "Not implemented");
+                throw new PropertyNotImplementedException("SlewSetLoggereTime", true);
             }
         }
 
         public void SlewToAltAz(double Azimuth, double Altitude) {
-            tl.LogMessage("SlewToAltAz", "Not implemented");
+            Logger.LogMessage("SlewToAltAz", "Not implemented");
             throw new MethodNotImplementedException("SlewToAltAz");
         }
 
         public void SlewToAltAzAsync(double Azimuth, double Altitude) {
-            tl.LogMessage("SlewToAltAzAsync", "Not implemented");
+            Logger.LogMessage("SlewToAltAzAsync", "Not implemented");
             throw new MethodNotImplementedException("SlewToAltAzAsync");
         }
 
         public void SlewToCoordinates(double RightAscension, double Declination) {
-            tl.LogMessage("SlewToCoordinates", "Not implemented");
+            Logger.LogMessage("SlewToCoordinates", "Not implemented");
             throw new MethodNotImplementedException("SlewToCoordinates");
         }
 
         public void SlewToCoordinatesAsync(double RightAscension, double Declination) {
-            tl.LogMessage("SlewToCoordinatesAsync", "Not implemented");
+            Logger.LogMessage("SlewToCoordinatesAsync", "Not implemented");
             throw new MethodNotImplementedException("SlewToCoordinatesAsync");
         }
 
         public void SlewToTarget() {
-            tl.LogMessage("SlewToTarget", "Not implemented");
+            Logger.LogMessage("SlewToTarget", "Not implemented");
             throw new MethodNotImplementedException("SlewToTarget");
         }
 
         public void SlewToTargetAsync() {
-            tl.LogMessage("SlewToTargetAsync", "Not implemented");
+            Logger.LogMessage("SlewToTargetAsync", "Not implemented");
             throw new MethodNotImplementedException("SlewToTargetAsync");
         }
 
         public bool Slewing {
             get {
-                tl.LogMessage("Slewing Get", "Not implemented");
+                Logger.LogMessage("Slewing Get", "Not implemented");
                 throw new PropertyNotImplementedException("Slewing", false);
             }
         }
 
         public void SyncToAltAz(double Azimuth, double Altitude) {
-            tl.LogMessage("SyncToAltAz", "Not implemented");
+            Logger.LogMessage("SyncToAltAz", "Not implemented");
             throw new MethodNotImplementedException("SyncToAltAz");
         }
 
         public void SyncToCoordinates(double RightAscension, double Declination) {
-            tl.LogMessage("SyncToCoordinates", "Not implemented");
+            Logger.LogMessage("SyncToCoordinates", "Not implemented");
             throw new MethodNotImplementedException("SyncToCoordinates");
         }
 
         public void SyncToTarget() {
-            tl.LogMessage("SyncToTarget", "Not implemented");
+            Logger.LogMessage("SyncToTarget", "Not implemented");
             throw new MethodNotImplementedException("SyncToTarget");
         }
 
         public double TargetDeclination {
             get {
-                tl.LogMessage("TargetDeclination Get", "Not implemented");
+                Logger.LogMessage("TargetDeclination Get", "Not implemented");
                 throw new PropertyNotImplementedException("TargetDeclination", false);
             }
             set {
-                tl.LogMessage("TargetDeclination Set", "Not implemented");
+                Logger.LogMessage("TargetDeclination Set", "Not implemented");
                 throw new PropertyNotImplementedException("TargetDeclination", true);
             }
         }
 
         public double TargetRightAscension {
             get {
-                tl.LogMessage("TargetRightAscension Get", "Not implemented");
+                Logger.LogMessage("TargetRightAscension Get", "Not implemented");
                 throw new PropertyNotImplementedException("TargetRightAscension", false);
             }
             set {
-                tl.LogMessage("TargetRightAscension Set", "Not implemented");
+                Logger.LogMessage("TargetRightAscension Set", "Not implemented");
                 throw new PropertyNotImplementedException("TargetRightAscension", true);
             }
         }
@@ -696,11 +718,11 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public bool Tracking {
             get {
                 bool tracking = true;
-                tl.LogMessage("Tracking", "Get - " + tracking.ToString());
+                Logger.LogMessage("Tracking", "Get - " + tracking.ToString());
                 return tracking;
             }
             set {
-                tl.LogMessage("Tracking Set", "Not implemented");
+                Logger.LogMessage("Tracking Set", "Not implemented");
                 throw new PropertyNotImplementedException("Tracking", true);
             }
         }
@@ -708,11 +730,11 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public DriveRates TrackingRate {
             get {
                 const DriveRates DEFAULT_DRIVERATE = DriveRates.driveSidereal;
-                tl.LogMessage("TrackingRate Get", $"{DEFAULT_DRIVERATE}");
+                Logger.LogMessage("TrackingRate Get", $"{DEFAULT_DRIVERATE}");
                 return DEFAULT_DRIVERATE;
             }
             set {
-                tl.LogMessage("TrackingRate Set", "Not implemented");
+                Logger.LogMessage("TrackingRate Set", "Not implemented");
                 throw new PropertyNotImplementedException("TrackingRate", true);
             }
         }
@@ -720,9 +742,9 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public ITrackingRates TrackingRates {
             get {
                 ITrackingRates trackingRates = new TrackingRates();
-                tl.LogMessage("TrackingRates", "Get - ");
+                Logger.LogMessage("TrackingRates", "Get - ");
                 foreach (DriveRates driveRate in trackingRates) {
-                    tl.LogMessage("TrackingRates", "Get - " + driveRate.ToString());
+                    Logger.LogMessage("TrackingRates", "Get - " + driveRate.ToString());
                 }
                 return trackingRates;
             }
@@ -731,17 +753,17 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         public DateTime UTCDate {
             get {
                 DateTime utcDate = DateTime.UtcNow;
-                tl.LogMessage("TrackingRates", "Get - " + String.Format("MM/dd/yy HH:mm:ss", utcDate));
+                Logger.LogMessage("TrackingRates", "Get - " + String.Format("MM/dd/yy HH:mm:ss", utcDate));
                 return utcDate;
             }
             set {
-                tl.LogMessage("UTCDate Set", "Not implemented");
+                Logger.LogMessage("UTCDate Set", "Not implemented");
                 throw new PropertyNotImplementedException("UTCDate", true);
             }
         }
 
         public void Unpark() {
-            tl.LogMessage("Unpark", "Not implemented");
+            Logger.LogMessage("Unpark", "Not implemented");
             throw new MethodNotImplementedException("Unpark");
         }
 
@@ -783,7 +805,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         /// <list type="numbered">
         /// <item>
         /// In Visual Studio, when the project is successfully built.
-        /// For this to work correctly, the option <c>Register for COM Interop</c>
+        /// For this to work correcLoggery, the option <c>Register for COM Interop</c>
         /// must be enabled in the project settings.
         /// </item>
         /// <item>During setup, when the installer registers the assembly for COM Interop.</item>
@@ -806,7 +828,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         /// <list type="numbered">
         /// <item>
         /// In Visual Studio, when the project is cleaned or prior to rebuilding.
-        /// For this to work correctly, the option <c>Register for COM Interop</c>
+        /// For this to work correcLoggery, the option <c>Register for COM Interop</c>
         /// must be enabled in the project settings.
         /// </item>
         /// <item>During uninstall, when the installer unregisters the assembly from COM Interop.</item>
@@ -831,6 +853,11 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             }
         }
 
+        public short SlewSettleTime {
+            get => throw new ASCOM.PropertyNotImplementedException();
+            set => throw new ASCOM.PropertyNotImplementedException();
+        }
+
         /// <summary>
         /// Use this function to throw an exception if we aren't connected to the hardware
         /// </summary>
@@ -847,7 +874,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         internal void ReadProfile() {
             using (Profile driverProfile = new Profile()) {
                 driverProfile.DeviceType = "Telescope";
-                tl.Enabled = Convert.ToBoolean(driverProfile.GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
+                Logger.Enabled = Convert.ToBoolean(driverProfile.GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
                 comPort = driverProfile.GetValue(driverID, comPortProfileName, string.Empty, comPortDefault);
             }
         }
@@ -858,7 +885,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         internal void WriteProfile() {
             using (Profile driverProfile = new Profile()) {
                 driverProfile.DeviceType = "Telescope";
-                driverProfile.WriteValue(driverID, traceStateProfileName, tl.Enabled.ToString());
+                driverProfile.WriteValue(driverID, traceStateProfileName, Logger.Enabled.ToString());
                 driverProfile.WriteValue(driverID, comPortProfileName, comPort.ToString());
             }
         }
@@ -871,7 +898,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         /// <param name="args"></param>
         internal void LogMessage(string identifier, string message, params object[] args) {
             var msg = string.Format(message, args);
-            tl.LogMessage(identifier, msg);
+            Logger.LogMessage(identifier, msg);
         }
 
         #endregion

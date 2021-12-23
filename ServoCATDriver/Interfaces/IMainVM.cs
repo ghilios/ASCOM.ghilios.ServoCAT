@@ -10,10 +10,12 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Utility;
+using System.ComponentModel;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.Joko.ServoCAT.Interfaces {
 
-    public class BaseVM : BaseINPC {
+    public interface IMainVM : INotifyPropertyChanged {
+        IAstrometryOptions AstrometryOptions { get; }
+        IServoCatOptions ServoCatOptions { get; }
     }
 }

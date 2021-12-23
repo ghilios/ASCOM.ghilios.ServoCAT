@@ -1,7 +1,7 @@
 ﻿#region "copyright"
 
 /*
-    Copyright © 2021 - 2021 George Hilios <ghilios+NINA@googlemail.com>
+    Copyright © 2021 - 2021 George Hilios <ghilios+SERVOCAT@googlemail.com>
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,7 +10,9 @@
 
 #endregion "copyright"
 
+using ASCOM.Joko.ServoCAT.Astrometry;
 using ASCOM.Joko.ServoCAT.Service.Utility;
+using ASCOM.Joko.ServoCAT.Telescope;
 using ASCOM.Joko.ServoCAT.View;
 using ASCOM.Joko.ServoCAT.ViewModel;
 using ASCOM.Utilities;
@@ -28,7 +30,7 @@ using System.Windows;
 namespace ASCOM.Joko.ServoCAT.Service {
 
     /// <summary>
-    /// Interaction logic for LocalServerApp.xaml
+    /// Main entry point for the local driver server
     /// </summary>
     public partial class LocalServerApp : Application {
         private uint mainThreadId;
@@ -36,10 +38,10 @@ namespace ASCOM.Joko.ServoCAT.Service {
         private int driversInUseCount;
         private volatile int serverLockCount;
         private ArrayList driverTypes;
-        private ArrayList classFactories;
+        private ArrayList classFactories = new ArrayList();
         private string localServerAppId = "{289163c8-6579-4b32-90d2-68fb447a01df}";
 
-        private readonly Object serverLock = new object();
+        private readonly object serverLock = new object();
         private Task GCTask;
         private CancellationTokenSource GCTokenSource;
 
@@ -77,7 +79,11 @@ namespace ASCOM.Joko.ServoCAT.Service {
             Thread.CurrentThread.Name = "Joko.ServoCAT Local Server Thread";
 
             ServerLogger.LogMessage("Main", $"Creating host window");
-            var mainVM = new MainVM();
+            var ascomProfile = new Profile();
+            var servoCatOptions = new ServoCatOptions(ascomProfile);
+            var astrometryOptions = new AstrometryOptions(ascomProfile);
+            var mainVM = new MainVM(astrometryOptions, servoCatOptions);
+            // TODO: Try using WindowService
             Main mainWindow = new Main();
             mainWindow.DataContext = mainVM;
             mainWindow.Show();
@@ -529,13 +535,13 @@ namespace ASCOM.Joko.ServoCAT.Service {
         private void StopGarbageCollection() {
             // Signal the garbage collector thread to stop
             ServerLogger.LogMessage("StopGarbageCollection", $"Stopping garbage collector thread");
-            GCTokenSource.Cancel();
-            GCTask.Wait();
+            GCTokenSource?.Cancel();
+            GCTask?.Wait();
             ServerLogger.LogMessage("StopGarbageCollection", $"Garbage collector thread stopped OK");
 
             // Clean up
             GCTask = null;
-            GCTokenSource.Dispose();
+            GCTokenSource?.Dispose();
             GCTokenSource = null;
         }
 

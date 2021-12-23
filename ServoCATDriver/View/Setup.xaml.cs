@@ -10,10 +10,17 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Utility;
+using System.Windows;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.Joko.ServoCAT.View {
 
-    public class BaseVM : BaseINPC {
+    /// <summary>
+    /// Interaction logic for Setup.xaml
+    /// </summary>
+    public partial class Setup : Window {
+
+        public Setup() {
+            InitializeComponent();
+        }
     }
 }

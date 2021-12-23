@@ -14,9 +14,9 @@ using ASCOM.Joko.ServoCAT.Interfaces;
 
 namespace ASCOM.Joko.ServoCAT.ViewModel {
 
-    public class MainVM : BaseVM {
+    public class SetupVM : BaseVM {
 
-        public MainVM(IAstrometryOptions astrometryOptions, IServoCatOptions servoCatOptions) {
+        public SetupVM(IAstrometryOptions astrometryOptions, IServoCatOptions servoCatOptions) {
             this.AstrometryOptions = astrometryOptions;
             this.ServoCatOptions = servoCatOptions;
         }

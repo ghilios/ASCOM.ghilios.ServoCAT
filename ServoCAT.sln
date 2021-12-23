@@ -7,10 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServoCATDriver", "ServoCATD
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug Register COM|Any CPU = Debug Register COM|Any CPU
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C708E487-E3A9-4073-A545-294B88674225}.Debug Register COM|Any CPU.ActiveCfg = Debug Register COM|Any CPU
+		{C708E487-E3A9-4073-A545-294B88674225}.Debug Register COM|Any CPU.Build.0 = Debug Register COM|Any CPU
 		{C708E487-E3A9-4073-A545-294B88674225}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C708E487-E3A9-4073-A545-294B88674225}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C708E487-E3A9-4073-A545-294B88674225}.Release|Any CPU.ActiveCfg = Release|Any CPU
