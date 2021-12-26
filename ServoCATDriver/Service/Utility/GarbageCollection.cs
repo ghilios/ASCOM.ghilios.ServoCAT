@@ -19,10 +19,10 @@ namespace ASCOM.Joko.ServoCAT.Service.Utility {
     /// Summary description for GarbageCollection.
     /// </summary>
     internal class GarbageCollection {
-        private readonly int _interval;
+        private readonly TimeSpan interval;
 
-        public GarbageCollection(int interval) {
-            _interval = interval;
+        public GarbageCollection(TimeSpan interval) {
+            this.interval = interval;
         }
 
         public void GCWatch(CancellationToken token) {
@@ -31,17 +31,10 @@ namespace ASCOM.Joko.ServoCAT.Service.Utility {
             }
 
             bool taskCancelled = false;
-
             while (!taskCancelled) {
                 GC.Collect();
-
-                // Sleep until the interval expires or we are cancelled.
-
-                taskCancelled = token.WaitHandle.WaitOne(_interval);
+                taskCancelled = token.WaitHandle.WaitOne(interval);
             }
-
-            // Collect garbage one more time.
-
             GC.Collect();
         }
     }

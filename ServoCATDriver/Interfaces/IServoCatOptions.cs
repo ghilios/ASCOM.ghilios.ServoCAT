@@ -10,14 +10,19 @@
 
 #endregion "copyright"
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel;
 
 namespace ASCOM.Joko.ServoCAT.Interfaces {
 
-    public interface IServoCatOptions {
+    public interface IServoCatOptions : INotifyPropertyChanged {
+
+        void Save();
+
+        void Load();
+
+        double Latitude { get; set; }
+        double Longitude { get; set; }
+        double Elevation { get; set; }
+        bool CoordinatesSet { get; }
     }
 }

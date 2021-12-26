@@ -15,7 +15,6 @@ using System.ComponentModel;
 namespace ASCOM.Joko.ServoCAT.Interfaces {
 
     public interface IMainVM : INotifyPropertyChanged {
-        IAstrometryOptions AstrometryOptions { get; }
         IServoCatOptions ServoCatOptions { get; }
     }
 }

@@ -10,9 +10,7 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Astrometry;
 using ASCOM.Joko.ServoCAT.Service.Utility;
-using ASCOM.Joko.ServoCAT.Telescope;
 using ASCOM.Joko.ServoCAT.View;
 using ASCOM.Joko.ServoCAT.ViewModel;
 using ASCOM.Utilities;
@@ -22,7 +20,6 @@ using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -39,7 +36,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
         private volatile int serverLockCount;
         private ArrayList driverTypes;
         private ArrayList classFactories = new ArrayList();
-        private string localServerAppId = "{289163c8-6579-4b32-90d2-68fb447a01df}";
+        private const string LOCAL_SERVER_APPID = "{289163c8-6579-4b32-90d2-68fb447a01df}";
 
         private readonly object serverLock = new object();
         private Task GCTask;
@@ -80,9 +77,9 @@ namespace ASCOM.Joko.ServoCAT.Service {
 
             ServerLogger.LogMessage("Main", $"Creating host window");
             var ascomProfile = new Profile();
-            var servoCatOptions = new ServoCatOptions(ascomProfile);
-            var astrometryOptions = new AstrometryOptions(ascomProfile);
-            var mainVM = new MainVM(astrometryOptions, servoCatOptions);
+            var telescopeDriverId = ((ProgIdAttribute)Attribute.GetCustomAttribute(typeof(Telescope.Telescope), typeof(ProgIdAttribute))).Value;
+            var servoCatOptions = new ServoCatOptions(ascomProfile, telescopeDriverId);
+            var mainVM = new MainVM(servoCatOptions);
             // TODO: Try using WindowService
             Main mainWindow = new Main();
             mainWindow.DataContext = mainVM;
@@ -94,7 +91,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
 
             // Start the garbage collection thread.
             ServerLogger.LogMessage("Main", $"Starting garbage collection");
-            StartGarbageCollection(10000);
+            StartGarbageCollection(TimeSpan.FromSeconds(10));
             ServerLogger.LogMessage("Main", $"Garbage collector thread started");
         }
 
@@ -191,13 +188,10 @@ namespace ASCOM.Joko.ServoCAT.Service {
         /// It also adds DCOM info for the local server itself, so it can be activated via an outbound connection from TheSky.
         /// </remarks>
         private void RegisterObjects() {
-            // Request administrator privilege if we don't already have it
-            if (!IsAdministrator) {
+            if (!WindowsUtility.IsAdministrator()) {
                 ElevateSelf("/register");
                 return;
             }
-
-            // If we reach here, we're running elevated
 
             // Initialise variables
             Assembly executingAssembly = Assembly.GetExecutingAssembly();
@@ -212,16 +206,16 @@ namespace ASCOM.Joko.ServoCAT.Service {
                 ServerLogger.LogMessage("RegisterObjects", $"Setting local server's APPID");
 
                 // Set HKCR\APPID\appid
-                using (RegistryKey appIdKey = Registry.ClassesRoot.CreateSubKey($"APPID\\{localServerAppId}")) {
+                using (RegistryKey appIdKey = Registry.ClassesRoot.CreateSubKey($"APPID\\{LOCAL_SERVER_APPID}")) {
                     appIdKey.SetValue(null, assemblyDescription);
-                    appIdKey.SetValue("AppID", localServerAppId);
+                    appIdKey.SetValue("AppID", LOCAL_SERVER_APPID);
                     appIdKey.SetValue("AuthenticationLevel", 1, RegistryValueKind.DWord);
                     appIdKey.SetValue("RunAs", "Interactive User", RegistryValueKind.String); // Added to ensure that only one copy of the local server runs if the user uses both elevated and non-elevated clients concurrently
                 }
 
                 // Set HKCR\APPID\exename.ext
                 using (RegistryKey exeNameKey = Registry.ClassesRoot.CreateSubKey($"APPID\\{executablePath.Substring(executablePath.LastIndexOf('\\') + 1)}")) {
-                    exeNameKey.SetValue("AppID", localServerAppId);
+                    exeNameKey.SetValue("AppID", LOCAL_SERVER_APPID);
                 }
                 ServerLogger.LogMessage("RegisterObjects", $"APPID set successfully");
             } catch (Exception ex) {
@@ -243,7 +237,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
 
                     using (RegistryKey clsIdKey = Registry.ClassesRoot.CreateSubKey($"CLSID\\{clsId}")) {
                         clsIdKey.SetValue(null, progId);
-                        clsIdKey.SetValue("AppId", localServerAppId);
+                        clsIdKey.SetValue("AppId", LOCAL_SERVER_APPID);
                         using (RegistryKey implementedCategoriesKey = clsIdKey.CreateSubKey("Implemented Categories")) {
                             implementedCategoriesKey.CreateSubKey("{62C8FE65-4EBB-45e7-B440-6E39B2CDBF29}");
                         }
@@ -290,17 +284,15 @@ namespace ASCOM.Joko.ServoCAT.Service {
         /// Unregister drivers contained in this local server. (Must run as administrator.)
         /// </summary>
         private void UnregisterObjects() {
-            // Request administrator privilege if we don't already have it
-            if (!IsAdministrator) {
+            if (!WindowsUtility.IsAdministrator()) {
                 ElevateSelf("/unregister");
                 return;
             }
 
-            // If we reach here, we're running elevated
             var executablePath = Process.GetCurrentProcess().MainModule.FileName;
 
             // Delete the Local Server's DCOM/AppID information
-            Registry.ClassesRoot.DeleteSubKey($"APPID\\{localServerAppId}", false);
+            Registry.ClassesRoot.DeleteSubKey($"APPID\\{LOCAL_SERVER_APPID}", false);
             Registry.ClassesRoot.DeleteSubKey($"APPID\\{executablePath.Substring(executablePath.LastIndexOf('\\') + 1)}", false);
 
             // Delete each driver's COM registration
@@ -336,17 +328,6 @@ namespace ASCOM.Joko.ServoCAT.Service {
                 //    }
                 //}
                 //catch (Exception) { }
-            }
-        }
-
-        private bool IsAdministrator {
-            get {
-                WindowsIdentity userIdentity = WindowsIdentity.GetCurrent();
-                WindowsPrincipal userPrincipal = new WindowsPrincipal(userIdentity);
-                bool isAdministrator = userPrincipal.IsInRole(WindowsBuiltInRole.Administrator);
-
-                ServerLogger.LogMessage("IsAdministrator", isAdministrator.ToString());
-                return isAdministrator;
             }
         }
 
@@ -519,8 +500,8 @@ namespace ASCOM.Joko.ServoCAT.Service {
         /// Start a garbage collection thread that can be cancelled
         /// </summary>
         /// <param name="interval">Frequency of garbage collections</param>
-        private void StartGarbageCollection(int interval) {
-            ServerLogger.LogMessage("StartGarbageCollection", $"Creating garbage collector with interval: {interval} seconds");
+        private void StartGarbageCollection(TimeSpan interval) {
+            ServerLogger.LogMessage("StartGarbageCollection", $"Creating garbage collector with interval: {interval}");
             var garbageCollector = new GarbageCollection(interval);
 
             ServerLogger.LogMessage("StartGarbageCollection", $"Starting garbage collector thread");

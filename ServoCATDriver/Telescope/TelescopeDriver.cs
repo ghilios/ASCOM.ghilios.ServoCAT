@@ -14,8 +14,8 @@ using ASCOM.Astrometry;
 using ASCOM.Astrometry.AstroUtils;
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.DeviceInterface;
-using ASCOM.Joko.ServoCAT.Astrometry;
 using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.Joko.ServoCAT.Service;
 using ASCOM.Joko.ServoCAT.Service.Utility;
 using ASCOM.Joko.ServoCAT.Utility;
 using ASCOM.Joko.ServoCAT.ViewModel;
@@ -43,7 +43,6 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
     public class Telescope : ReferenceCountedObjectBase, ITelescopeV3 {
         private Profile ascomProfile = new Profile();
         private readonly IServoCatOptions servoCatOptions;
-        private readonly IAstrometryOptions astrometryOptions;
 
         // Constants used for Profile persistence
         internal const string comPortProfileName = "COM Port";
@@ -82,9 +81,10 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                     throw new ASCOM.DriverException("DriverDescription is not set");
                 }
 
-                this.ascomProfile = new Profile();
-                this.servoCatOptions = new ServoCatOptions(ascomProfile);
-                this.astrometryOptions = new AstrometryOptions(ascomProfile);
+                this.ascomProfile = new Profile() {
+                    DeviceType = nameof(Telescope)
+                };
+                this.servoCatOptions = new ServoCatOptions(ascomProfile, driverID);
 
                 Logger = new TraceLogger("", "ASCOM.Joko.ServoCAT.Telescope");
                 ReadProfile(); // Read device configuration from the ASCOM Profile store, including the trace state
@@ -122,7 +122,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
             var windowService = new WindowService();
             try {
-                var setupVM = new SetupVM(this.astrometryOptions, this.servoCatOptions);
+                var setupVM = new SetupVM(this.servoCatOptions);
                 var result = windowService.ShowDialog(setupVM, "ServoCAT Options", windowStyle: WindowStyle.ToolWindow);
                 result.Wait();
             } finally {

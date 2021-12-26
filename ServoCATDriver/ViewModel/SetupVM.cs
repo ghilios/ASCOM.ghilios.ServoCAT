@@ -16,12 +16,10 @@ namespace ASCOM.Joko.ServoCAT.ViewModel {
 
     public class SetupVM : BaseVM {
 
-        public SetupVM(IAstrometryOptions astrometryOptions, IServoCatOptions servoCatOptions) {
-            this.AstrometryOptions = astrometryOptions;
+        public SetupVM(IServoCatOptions servoCatOptions) {
             this.ServoCatOptions = servoCatOptions;
         }
 
-        public IAstrometryOptions AstrometryOptions { get; private set; }
         public IServoCatOptions ServoCatOptions { get; private set; }
     }
 }
