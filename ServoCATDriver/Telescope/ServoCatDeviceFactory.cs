@@ -12,14 +12,17 @@
 
 using ASCOM.Joko.ServoCAT.Interfaces;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.Joko.ServoCAT.Telescope {
 
-    public class MainVM : BaseVM, IMainVM {
+    public class ServoCatDeviceFactory : IServoCatDeviceFactory {
+        private readonly IServoCatOptions options;
 
-        public MainVM(IServoCatOptions servoCatOptions) {
-            this.ServoCatOptions = servoCatOptions;
+        public ServoCatDeviceFactory(IServoCatOptions options) {
+            this.options = options;
         }
 
-        public IServoCatOptions ServoCatOptions { get; private set; }
+        public IServoCatDevice Create(IChannel channel) {
+            return new ServoCatDevice(channel, options);
+        }
     }
 }

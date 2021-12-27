@@ -17,13 +17,16 @@ using ASCOM.DeviceInterface;
 using ASCOM.Joko.ServoCAT.Interfaces;
 using ASCOM.Joko.ServoCAT.Service;
 using ASCOM.Joko.ServoCAT.Service.Utility;
+using ASCOM.Joko.ServoCAT.Threading;
 using ASCOM.Joko.ServoCAT.Utility;
 using ASCOM.Joko.ServoCAT.ViewModel;
 using ASCOM.Utilities;
+using Ninject;
 using System;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 
 namespace ASCOM.Joko.ServoCAT.Telescope {
@@ -41,66 +44,71 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
     [ServedClassName("ServoCAT Driver, by George Hilios")]
     [ClassInterface(ClassInterfaceType.None)]
     public class Telescope : ReferenceCountedObjectBase, ITelescopeV3 {
-        private Profile ascomProfile = new Profile();
         private readonly IServoCatOptions servoCatOptions;
+        private readonly ISharedState sharedState;
+        private readonly Util ascomUtilities;
+        private readonly IAstroUtils astroUtilities;
+        private readonly TraceLogger Logger;
+        private readonly IDriverConnectionManager driverConnectionManager;
+        private readonly IServoCatDeviceFactory servoCatDeviceFactory;
+        private readonly Guid driverClientId;
 
-        // Constants used for Profile persistence
-        internal const string comPortProfileName = "COM Port";
-
-        internal const string comPortDefault = "COM1";
-        internal const string traceStateProfileName = "Trace Level";
-        internal const string traceStateDefault = "true";
-
-        internal static string comPort; // Variable to hold the COM port if required
-
-        private static readonly string driverID;
-        private static readonly string driverDescription;
-        private bool connectedState;
-        private Util ascomUtilities;
-        private AstroUtils astroUtilities;
-        private TraceLogger Logger;
-
-        static Telescope() {
-            var attr = Attribute.GetCustomAttribute(typeof(Telescope), typeof(ProgIdAttribute));
-            driverID = ((ProgIdAttribute)attr).Value;
-
-            attr = Attribute.GetCustomAttribute(typeof(Telescope), typeof(ServedClassNameAttribute));
-            driverDescription = ((ServedClassNameAttribute)attr).DisplayName;
-        }
+        private IServoCatDevice servoCatDevice;
+        private bool connectedState = false;
+        private bool disposed = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Joko.ServoCAT"/> class. Must be public to successfully register for COM.
         /// </summary>
-        public Telescope() {
+        public Telescope() : this(
+            sharedState: CompositionRoot.Kernel.Get<ISharedState>(),
+            options: CompositionRoot.Kernel.Get<IServoCatOptions>(),
+            driverConnectionManager: CompositionRoot.Kernel.Get<IDriverConnectionManager>(),
+            servoCatDeviceFactory: CompositionRoot.Kernel.Get<IServoCatDeviceFactory>(),
+            logger: CompositionRoot.Kernel.Get<TraceLogger>("Telescope"),
+            astroUtilities: CompositionRoot.Kernel.Get<IAstroUtils>(),
+            ascomUtilities: CompositionRoot.Kernel.Get<Util>()) {
+        }
+
+        public Telescope(
+            ISharedState sharedState,
+            IServoCatOptions options,
+            IDriverConnectionManager driverConnectionManager,
+            IServoCatDeviceFactory servoCatDeviceFactory,
+            TraceLogger logger,
+            IAstroUtils astroUtilities,
+            Util ascomUtilities) {
             try {
-                if (string.IsNullOrEmpty(driverID)) {
+                if (string.IsNullOrEmpty(sharedState.TelescopeDriverId)) {
                     throw new ASCOM.DriverException("ProgID is not set");
                 }
 
-                if (string.IsNullOrEmpty(driverDescription)) {
+                if (string.IsNullOrEmpty(sharedState.TelescopeDriverDescription)) {
                     throw new ASCOM.DriverException("DriverDescription is not set");
                 }
 
-                this.ascomProfile = new Profile() {
-                    DeviceType = nameof(Telescope)
-                };
-                this.servoCatOptions = new ServoCatOptions(ascomProfile, driverID);
-
-                Logger = new TraceLogger("", "ASCOM.Joko.ServoCAT.Telescope");
-                ReadProfile(); // Read device configuration from the ASCOM Profile store, including the trace state
-
+                this.sharedState = sharedState;
+                this.servoCatOptions = options;
+                this.driverConnectionManager = driverConnectionManager;
+                this.servoCatDeviceFactory = servoCatDeviceFactory;
+                Logger = logger;
                 Logger.LogMessage("Telescope", "Starting initialization");
-                Logger.LogMessage("Telescope", $"ProgID: {driverID}, Description: {driverDescription}");
+                Logger.LogMessage("Telescope", $"ProgID: {sharedState.TelescopeDriverId}, Description: {sharedState.TelescopeDriverDescription}");
 
-                connectedState = false;
-                ascomUtilities = new Util();
-                astroUtilities = new AstroUtils();
+                this.driverClientId = driverConnectionManager.RegisterClient();
+                Logger.LogMessage("Telescope", $"Registed with driver client id {driverClientId}");
+                this.ascomUtilities = ascomUtilities;
+                this.astroUtilities = astroUtilities;
 
                 Logger.LogMessage("Telescope", "Completed initialization");
             } catch (Exception ex) {
                 Logger.LogMessageCrLf("Telescope", $"Initialization exception: {ex}");
                 throw;
             }
+        }
+
+        ~Telescope() {
+            ReleaseManagedResources();
         }
 
         // PUBLIC COM INTERFACE ITelescopeV3 IMPLEMENTATION
@@ -118,10 +126,12 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             // or call a different dialogue if connected
             if (IsConnected) {
                 MessageBox.Show("Already connected, just press OK");
+                return;
             }
 
             var windowService = new WindowService();
             try {
+                // TODO: Internalize ServoCatOptions and copy afterwards
                 var setupVM = new SetupVM(this.servoCatOptions);
                 var result = windowService.ShowDialog(setupVM, "ServoCAT Options", windowStyle: WindowStyle.ToolWindow);
                 result.Wait();
@@ -171,17 +181,16 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         }
 
         public void Dispose() {
-            if (Logger != null) {
-                Logger.Enabled = false;
-                Logger.Dispose();
-                Logger = null;
+            if (disposed) {
+                return;
             }
-            ascomUtilities?.Dispose();
-            ascomUtilities = null;
-            astroUtilities?.Dispose();
-            astroUtilities = null;
-            ascomProfile?.Dispose();
-            ascomProfile = null;
+
+            try {
+                ReleaseManagedResources();
+                GC.SuppressFinalize(this);
+            } finally {
+                disposed = true;
+            }
         }
 
         public bool Connected {
@@ -191,23 +200,38 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             }
             set {
                 Logger.LogMessage("Connected", "Set {0}", value);
-                if (value == IsConnected)
+                if (value == IsConnected) {
                     return;
+                }
 
                 if (value) {
+                    try {
+                        var channel = driverConnectionManager.Connect(driverClientId, TaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).Result;
+                        servoCatDevice = servoCatDeviceFactory.Create(channel);
+                    } catch (Exception e) {
+                        LogException("Connected Set", "Failed to connect", e);
+                        try {
+                            driverConnectionManager.Disconnect(driverClientId, TaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).RunSynchronously();
+                        } catch (Exception e2) {
+                            LogException("Connected Set", "Failed to disconnect after failed connection", e2);
+                        }
+                        throw;
+                    }
                     connectedState = true;
-                    LogMessage("Connected Set", "Connecting to port {0}", comPort);
-                    // TODO connect to the device
                 } else {
+                    try {
+                        driverConnectionManager.Disconnect(driverClientId, TaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).RunSynchronously();
+                    } catch (Exception e) {
+                        LogException("Connected Set", "Failed to disconnect", e);
+                    }
                     connectedState = false;
-                    LogMessage("Connected Set", "Disconnecting from port {0}", comPort);
-                    // TODO disconnect from the device
                 }
             }
         }
 
         public string Description {
             get {
+                var driverDescription = sharedState.TelescopeDriverDescription;
                 Logger.LogMessage("Description Get", driverDescription);
                 return driverDescription;
             }
@@ -241,7 +265,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public string Name {
             get {
-                string name = "ServoCAT ASCOM Driver";
+                string name = "ServoCAT ASCOM Driver, by ghilios";
                 Logger.LogMessage("Name Get", name);
                 return name;
             }
@@ -787,10 +811,11 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         private static void RegUnregASCOM(bool bRegister) {
             using (var P = new Profile()) {
                 P.DeviceType = "Telescope";
+                var sharedState = CompositionRoot.Kernel.Get<ISharedState>();
                 if (bRegister) {
-                    P.Register(driverID, driverDescription);
+                    P.Register(sharedState.TelescopeDriverId, sharedState.TelescopeDriverDescription);
                 } else {
-                    P.Unregister(driverID);
+                    P.Unregister(sharedState.TelescopeDriverId);
                 }
             }
         }
@@ -868,39 +893,25 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             }
         }
 
-        /// <summary>
-        /// Read the device configuration from the ASCOM Profile store
-        /// </summary>
-        internal void ReadProfile() {
-            using (Profile driverProfile = new Profile()) {
-                driverProfile.DeviceType = "Telescope";
-                Logger.Enabled = Convert.ToBoolean(driverProfile.GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
-                comPort = driverProfile.GetValue(driverID, comPortProfileName, string.Empty, comPortDefault);
-            }
-        }
-
-        /// <summary>
-        /// Write the device configuration to the  ASCOM  Profile store
-        /// </summary>
-        internal void WriteProfile() {
-            using (Profile driverProfile = new Profile()) {
-                driverProfile.DeviceType = "Telescope";
-                driverProfile.WriteValue(driverID, traceStateProfileName, Logger.Enabled.ToString());
-                driverProfile.WriteValue(driverID, comPortProfileName, comPort.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Log helper function that takes formatted strings and arguments
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="message"></param>
-        /// <param name="args"></param>
         internal void LogMessage(string identifier, string message, params object[] args) {
             var msg = string.Format(message, args);
             Logger.LogMessage(identifier, msg);
         }
 
+        internal void LogException(string identifier, string message, Exception e) {
+            var msg = $"Exception={e.Message}, Message={message}, Details={e}";
+            Logger.LogMessage(identifier, msg);
+        }
+
         #endregion
+
+        private void ReleaseManagedResources() {
+            if (disposed) {
+                return;
+            }
+
+            driverConnectionManager.Disconnect(driverClientId, CancellationToken.None).RunSynchronously();
+            driverConnectionManager.UnregisterClient(driverClientId).RunSynchronously();
+        }
     }
 }

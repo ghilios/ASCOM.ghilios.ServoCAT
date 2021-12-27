@@ -10,16 +10,18 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.Joko.ServoCAT.Converters;
+using System.ComponentModel;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.Joko.ServoCAT.Astrometry {
 
-    public class MainVM : BaseVM, IMainVM {
+    [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
+    public enum Epoch {
 
-        public MainVM(IServoCatOptions servoCatOptions) {
-            this.ServoCatOptions = servoCatOptions;
-        }
+        [Description("JNOW")]
+        JNOW,
 
-        public IServoCatOptions ServoCatOptions { get; private set; }
+        [Description("J2000")]
+        J2000
     }
 }

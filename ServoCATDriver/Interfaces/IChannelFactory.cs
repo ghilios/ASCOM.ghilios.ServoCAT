@@ -10,16 +10,10 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
+namespace ASCOM.Joko.ServoCAT.Interfaces {
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+    public interface IChannelFactory {
 
-    public class MainVM : BaseVM, IMainVM {
-
-        public MainVM(IServoCatOptions servoCatOptions) {
-            this.ServoCatOptions = servoCatOptions;
-        }
-
-        public IServoCatOptions ServoCatOptions { get; private set; }
+        IChannel Create();
     }
 }

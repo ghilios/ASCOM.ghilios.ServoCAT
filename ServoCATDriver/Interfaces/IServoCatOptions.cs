@@ -11,10 +11,17 @@
 #endregion "copyright"
 
 using System.ComponentModel;
+using ASCOM.Joko.ServoCAT.Converters;
 
 namespace ASCOM.Joko.ServoCAT.Interfaces {
 
-    public interface IServoCatOptions : INotifyPropertyChanged {
+    [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
+    public enum ConnectionType {
+        Simulator,
+        Serial
+    }
+
+    public interface IServoCatOptions {
 
         void Save();
 
@@ -23,6 +30,9 @@ namespace ASCOM.Joko.ServoCAT.Interfaces {
         double Latitude { get; set; }
         double Longitude { get; set; }
         double Elevation { get; set; }
+        ConnectionType ConnectionType { get; set; }
         bool CoordinatesSet { get; }
+        string SerialPort { get; set; }
+        bool UseJ2000 { get; set; }
     }
 }

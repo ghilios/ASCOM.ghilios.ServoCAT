@@ -13,70 +13,54 @@
 using ASCOM.Joko.ServoCAT.Interfaces;
 using ASCOM.Joko.ServoCAT.Utility;
 using ASCOM.Utilities.Interfaces;
+using Ninject;
+using PostSharp.Patterns.Model;
 
 namespace ASCOM.Joko.ServoCAT.Service {
 
+    [NotifyPropertyChanged]
     public class ServoCatOptions : BaseINPC, IServoCatOptions {
         private readonly IProfile ascomProfile;
         private readonly string driverId;
         private const string profileSubKey = "astrometry_settings";
 
-        public ServoCatOptions(IProfile ascomProfile, string driverId) {
+        public ServoCatOptions([Named("Telescope")] IProfile ascomProfile, ISharedState sharedState) {
             this.ascomProfile = ascomProfile;
-            this.driverId = driverId;
+            this.driverId = sharedState.TelescopeDriverId;
             Load();
         }
 
         public void Load() {
-            longitude = ascomProfile.GetDouble(driverId, "longitude", profileSubKey, double.NaN);
-            latitude = ascomProfile.GetDouble(driverId, "latitude", profileSubKey, double.NaN);
-            elevation = ascomProfile.GetDouble(driverId, "elevation", profileSubKey, 0.0d);
+            Longitude = ascomProfile.GetDouble(driverId, "longitude", profileSubKey, double.NaN);
+            Latitude = ascomProfile.GetDouble(driverId, "latitude", profileSubKey, double.NaN);
+            Elevation = ascomProfile.GetDouble(driverId, "elevation", profileSubKey, 0.0d);
+            SerialPort = ascomProfile.GetString(driverId, "serialPort", profileSubKey, null);
+            UseJ2000 = ascomProfile.GetBool(driverId, "useJ2000", profileSubKey, false);
+            ConnectionType = ascomProfile.GetEnum(driverId, "connectionType", profileSubKey, ConnectionType.Simulator);
         }
 
         public void Save() {
-            ascomProfile.WriteDouble(driverId, "longitude", profileSubKey, longitude);
-            ascomProfile.WriteDouble(driverId, "latitude", profileSubKey, latitude);
-            ascomProfile.WriteDouble(driverId, "elevation", profileSubKey, elevation);
+            ascomProfile.WriteDouble(driverId, "longitude", profileSubKey, Longitude);
+            ascomProfile.WriteDouble(driverId, "latitude", profileSubKey, Latitude);
+            ascomProfile.WriteDouble(driverId, "elevation", profileSubKey, Elevation);
+            ascomProfile.WriteString(driverId, "serialPort", profileSubKey, SerialPort);
+            ascomProfile.WriteBool(driverId, "useJ2000", profileSubKey, UseJ2000);
+            ascomProfile.WriteEnum(driverId, "connectionType", profileSubKey, ConnectionType);
         }
 
         public bool CoordinatesSet {
             get => !double.IsNaN(Longitude) && !double.IsNaN(Latitude) && !double.IsNaN(Elevation);
         }
 
-        private double latitude;
+        public double Latitude { get; set; }
 
-        public double Latitude {
-            get => latitude;
-            set {
-                if (latitude != value) {
-                    latitude = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
+        public double Longitude { get; set; }
 
-        private double longitude;
+        public double Elevation { get; set; }
 
-        public double Longitude {
-            get => longitude;
-            set {
-                if (longitude != value) {
-                    longitude = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
+        public string SerialPort { get; set; }
 
-        private double elevation;
-
-        public double Elevation {
-            get => elevation;
-            set {
-                if (elevation != value) {
-                    elevation = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
+        public bool UseJ2000 { get; set; }
+        public ConnectionType ConnectionType { get; set; }
     }
 }

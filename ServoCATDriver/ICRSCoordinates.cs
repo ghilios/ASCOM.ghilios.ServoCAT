@@ -9,17 +9,13 @@
 */
 
 #endregion "copyright"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-using ASCOM.Joko.ServoCAT.Interfaces;
-
-namespace ASCOM.Joko.ServoCAT.ViewModel {
-
-    public class MainVM : BaseVM, IMainVM {
-
-        public MainVM(IServoCatOptions servoCatOptions) {
-            this.ServoCatOptions = servoCatOptions;
-        }
-
-        public IServoCatOptions ServoCatOptions { get; private set; }
+namespace ASCOM.Joko.ServoCAT {
+    public class ICRSCoordinates {
     }
 }

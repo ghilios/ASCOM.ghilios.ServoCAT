@@ -15,6 +15,7 @@ using ASCOM.Joko.ServoCAT.View;
 using ASCOM.Joko.ServoCAT.ViewModel;
 using ASCOM.Utilities;
 using Microsoft.Win32;
+using Ninject;
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -76,10 +77,8 @@ namespace ASCOM.Joko.ServoCAT.Service {
             Thread.CurrentThread.Name = "Joko.ServoCAT Local Server Thread";
 
             ServerLogger.LogMessage("Main", $"Creating host window");
-            var ascomProfile = new Profile();
-            var telescopeDriverId = ((ProgIdAttribute)Attribute.GetCustomAttribute(typeof(Telescope.Telescope), typeof(ProgIdAttribute))).Value;
-            var servoCatOptions = new ServoCatOptions(ascomProfile, telescopeDriverId);
-            var mainVM = new MainVM(servoCatOptions);
+            var mainVM = CompositionRoot.Kernel.Get<MainVM>();
+
             // TODO: Try using WindowService
             Main mainWindow = new Main();
             mainWindow.DataContext = mainVM;
@@ -111,8 +110,15 @@ namespace ASCOM.Joko.ServoCAT.Service {
                 ServerLogger.LogMessage("Main", $"Failed to stop garbage collector: {ex}");
             }
 
+            try {
+                CompositionRoot.Kernel?.Dispose();
+            } catch (Exception ex) {
+                ServerLogger.LogMessage("Main", $"Failed to dispose composition root kernel: {ex}");
+            }
+
             ServerLogger.LogMessage("Main", $"Local server closing");
             ServerLogger.Dispose();
+            ServerLogger = null;
         }
 
         private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {

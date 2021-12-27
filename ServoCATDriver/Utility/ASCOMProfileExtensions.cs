@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using ASCOM.Utilities.Interfaces;
+using System;
 using System.Globalization;
 
 namespace ASCOM.Joko.ServoCAT.Utility {
@@ -45,6 +46,19 @@ namespace ASCOM.Joko.ServoCAT.Utility {
 
         public static void WriteString(this IProfile profile, string driverId, string name, string subkey, string value) {
             profile.WriteValue(driverId, name, value, subkey);
+        }
+
+        public static T GetEnum<T>(this IProfile profile, string driverId, string name, string subkey, T defaultValue) where T : struct, Enum {
+            var val = profile.GetValue(driverId, name, subkey, Enum.GetName(typeof(T), defaultValue));
+            if (Enum.TryParse<T>(val, out var result)) {
+                return result;
+            } else {
+                return defaultValue;
+            }
+        }
+
+        public static void WriteEnum<T>(this IProfile profile, string driverId, string name, string subkey, T value) where T : struct, Enum {
+            profile.WriteValue(driverId, name, Enum.GetName(typeof(T), value), subkey);
         }
     }
 }

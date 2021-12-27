@@ -10,16 +10,16 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
+using System;
+using System.Threading;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.Joko.ServoCAT.Threading {
 
-    public class MainVM : BaseVM, IMainVM {
+    public static class TaskExtensions {
 
-        public MainVM(IServoCatOptions servoCatOptions) {
-            this.ServoCatOptions = servoCatOptions;
+        public static CancellationToken TimeoutCancellationToken(TimeSpan duration) {
+            var cts = new CancellationTokenSource(duration);
+            return cts.Token;
         }
-
-        public IServoCatOptions ServoCatOptions { get; private set; }
     }
 }

@@ -10,16 +10,14 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.Joko.ServoCAT.Interfaces {
 
-    public class MainVM : BaseVM, IMainVM {
-
-        public MainVM(IServoCatOptions servoCatOptions) {
-            this.ServoCatOptions = servoCatOptions;
-        }
-
-        public IServoCatOptions ServoCatOptions { get; private set; }
+    public interface IServoCatDevice {
     }
 }
