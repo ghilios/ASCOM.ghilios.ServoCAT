@@ -17,14 +17,18 @@ using System.Threading.Tasks;
 namespace ASCOM.Joko.ServoCAT.IO {
 
     public class SimulatorChannel : IChannel {
+        private readonly IServoCatOptions options;
         private readonly DriverAccess.Telescope simulatorTelescope;
 
         private readonly MemoryQueueBufferStream memoryStream;
 
-        public SimulatorChannel() {
+        public SimulatorChannel(IServoCatOptions options) {
+            this.options = options;
             simulatorTelescope = new DriverAccess.Telescope("ASCOM.Simulator.Telescope");
             memoryStream = new MemoryQueueBufferStream();
         }
+
+        public bool IsOpen => simulatorTelescope.Connected;
 
         public Task Close(CancellationToken ct) {
             simulatorTelescope.Connected = false;

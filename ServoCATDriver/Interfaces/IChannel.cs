@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 namespace ASCOM.Joko.ServoCAT.Interfaces {
 
     public interface IChannel {
+        bool IsOpen { get; }
 
         Task Open(CancellationToken ct);
 

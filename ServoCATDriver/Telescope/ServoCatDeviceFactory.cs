@@ -10,19 +10,29 @@
 
 #endregion "copyright"
 
+using ASCOM.Joko.ServoCAT.Astrometry;
 using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.Utilities;
+using Ninject;
 
 namespace ASCOM.Joko.ServoCAT.Telescope {
 
     public class ServoCatDeviceFactory : IServoCatDeviceFactory {
         private readonly IServoCatOptions options;
+        private readonly AstrometryConverter astrometryConverter;
+        private readonly TraceLogger logger;
 
-        public ServoCatDeviceFactory(IServoCatOptions options) {
+        public ServoCatDeviceFactory(
+            IServoCatOptions options,
+            AstrometryConverter astrometryConverter,
+            [Named("Telescope")] TraceLogger logger) {
             this.options = options;
+            this.astrometryConverter = astrometryConverter;
+            this.logger = logger;
         }
 
         public IServoCatDevice Create(IChannel channel) {
-            return new ServoCatDevice(channel, options);
+            return new ServoCatDevice(channel, options, astrometryConverter, logger);
         }
     }
 }

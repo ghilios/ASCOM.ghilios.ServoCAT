@@ -66,6 +66,8 @@ namespace ASCOM.Joko.ServoCAT.IO {
             this.serialPort = config.CreateSerialPort();
         }
 
+        public bool IsOpen => serialPort.IsOpen;
+
         public async Task Open(CancellationToken ct) {
             if (serialPort.IsOpen) {
                 return;

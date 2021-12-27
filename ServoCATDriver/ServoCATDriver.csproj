@@ -186,7 +186,7 @@
     <Compile Include="Astrometry\ICRSCoordinates.cs" />
     <Compile Include="Astrometry\TopocentricCoordinates.cs" />
     <Compile Include="Converters\EnumStaticDescriptionTypeConverter.cs" />
-    <Compile Include="ICRSCoordinates.cs" />
+    <Compile Include="Exceptions\UnexpectedResponseException.cs" />
     <Compile Include="Interfaces\IChannel.cs" />
     <Compile Include="Interfaces\IChannelFactory.cs" />
     <Compile Include="Interfaces\IDriverConnectionManager.cs" />

@@ -23,7 +23,7 @@ namespace ASCOM.Joko.ServoCAT.IO {
 
         public IChannel Create() {
             if (options.ConnectionType == ConnectionType.Simulator) {
-                return new SimulatorChannel();
+                return new SimulatorChannel(options);
             } else {
                 // Serial
                 var serialConfig = SerialChannelConfig.CreateDefaultConfig(options.SerialPort);

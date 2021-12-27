@@ -58,6 +58,13 @@ namespace ASCOM.Joko.ServoCAT.Astrometry {
             return new Angle(radians);
         }
 
+        public Angle ToAbsolute() {
+            if (Radians >= 0.0d) {
+                return this;
+            }
+            return new Angle(Math.Abs(Radians));
+        }
+
         public static double DegreesToRadians(double degree) {
             return degree / 180.0d * Math.PI;
         }
@@ -79,6 +86,12 @@ namespace ASCOM.Joko.ServoCAT.Astrometry {
         public double Degrees => RadiansToDegrees(Radians);
 
         public double Hours => RadiansToHours(Radians);
+
+        public bool Positive => Radians > 0.0d;
+
+        public bool Negative => Radians < 0.0d;
+
+        public bool NonNegative => Radians >= 0.0d;
 
         public string DMS {
             get => Format(Degrees, "{0}{1:00}° {2:00}' {3:00}\"");
