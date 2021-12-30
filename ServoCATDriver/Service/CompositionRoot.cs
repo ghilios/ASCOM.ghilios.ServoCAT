@@ -45,6 +45,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
             Bind<INOVAS31>().To<NOVAS31>().InSingletonScope();
             Bind<AstrometryConverter>().To<AstrometryConverter>().InSingletonScope();
             Bind<Util>().To<Util>().InSingletonScope();
+            Bind<ISerialUtilities>().To<SerialUtilities>().InSingletonScope();
             Bind<IDriverConnectionManager>().To<DriverConnectionManager>().InSingletonScope();
             Bind<IServoCatOptions>().To<ServoCatOptions>().InSingletonScope().OnActivation(x => x.Load());
             Bind<IServoCatDeviceFactory>().To<IServoCatDeviceFactory>().InSingletonScope();

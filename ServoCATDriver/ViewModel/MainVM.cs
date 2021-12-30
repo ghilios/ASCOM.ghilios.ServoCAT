@@ -12,7 +12,6 @@
 
 using ASCOM.Joko.ServoCAT.Interfaces;
 using ASCOM.Joko.ServoCAT.Utility;
-using ASCOM.Joko.ServoCAT.View;
 using ASCOM.Utilities;
 using Ninject;
 using System;
@@ -23,18 +22,21 @@ namespace ASCOM.Joko.ServoCAT.ViewModel {
 
     public class MainVM : BaseVM, IMainVM {
         private readonly TraceLogger Logger;
+        private readonly ISerialUtilities serialUtilities;
 
         public MainVM(
             IServoCatOptions servoCatOptions,
-            [Named("Server")] TraceLogger logger) {
+            [Named("Server")] TraceLogger logger,
+            ISerialUtilities serialUtilities) {
             this.ServoCatOptions = servoCatOptions;
             this.Logger = logger;
             this.SetupCommand = new RelayCommand(OpenSetupDialog);
+            this.serialUtilities = serialUtilities;
         }
 
         private void OpenSetupDialog(object o) {
             try {
-                SetupVM.Show(ServoCatOptions);
+                SetupVM.Show(ServoCatOptions, serialUtilities);
             } catch (Exception ex) {
                 Logger.LogMessageCrLf("MainVM.OpenSetupDialog", $"Exception: {ex}");
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);

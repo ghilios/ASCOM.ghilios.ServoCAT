@@ -11,4 +11,5 @@
     xmlns:converters="clr-namespace:ASCOM.Joko.ServoCAT.Converters">
     <converters:PositiveIntToBooleanConverter x:Key="PositiveIntToBooleanConverter" />
     <converters:ZeroToBooleanConverter x:Key="ZeroToBooleanConverter" />
+    <converters:EnumStaticDescriptionValueConverter x:Key="EnumStaticDescriptionValueConverter" />
 </ResourceDictionary>

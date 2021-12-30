@@ -52,6 +52,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         private readonly IDriverConnectionManager driverConnectionManager;
         private readonly IServoCatDeviceFactory servoCatDeviceFactory;
         private readonly Guid driverClientId;
+        private readonly ISerialUtilities serialUtilities;
 
         private IServoCatDevice servoCatDevice;
         private bool connectedState = false;
@@ -67,7 +68,8 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             servoCatDeviceFactory: CompositionRoot.Kernel.Get<IServoCatDeviceFactory>(),
             logger: CompositionRoot.Kernel.Get<TraceLogger>("Telescope"),
             astroUtilities: CompositionRoot.Kernel.Get<IAstroUtils>(),
-            ascomUtilities: CompositionRoot.Kernel.Get<Util>()) {
+            ascomUtilities: CompositionRoot.Kernel.Get<Util>(),
+            serialUtilities: CompositionRoot.Kernel.Get<ISerialUtilities>()) {
         }
 
         public Telescope(
@@ -77,7 +79,8 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             IServoCatDeviceFactory servoCatDeviceFactory,
             TraceLogger logger,
             IAstroUtils astroUtilities,
-            Util ascomUtilities) {
+            Util ascomUtilities,
+            ISerialUtilities serialUtilities) {
             try {
                 if (string.IsNullOrEmpty(sharedState.TelescopeDriverId)) {
                     throw new ASCOM.DriverException("ProgID is not set");
@@ -91,6 +94,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                 this.servoCatOptions = options;
                 this.driverConnectionManager = driverConnectionManager;
                 this.servoCatDeviceFactory = servoCatDeviceFactory;
+                this.serialUtilities = serialUtilities;
                 Logger = logger;
                 Logger.LogMessage("Telescope", "Starting initialization");
                 Logger.LogMessage("Telescope", $"ProgID: {sharedState.TelescopeDriverId}, Description: {sharedState.TelescopeDriverDescription}");
@@ -129,14 +133,11 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                 return;
             }
 
-            var windowService = new WindowService();
             try {
-                // TODO: Internalize ServoCatOptions and copy afterwards
-                var setupVM = new SetupVM(this.servoCatOptions);
-                var result = windowService.ShowDialog(setupVM, "ServoCAT Options", windowStyle: WindowStyle.ToolWindow);
-                result.Wait();
-            } finally {
-                _ = windowService.Close();
+                SetupVM.Show(this.servoCatOptions, serialUtilities);
+            } catch (Exception ex) {
+                Logger.LogMessageCrLf("OpenSetupDialog", $"Exception: {ex}");
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

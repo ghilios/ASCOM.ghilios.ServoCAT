@@ -14,22 +14,24 @@ using ASCOM.Joko.ServoCAT.Interfaces;
 using ASCOM.Joko.ServoCAT.View;
 using System;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ASCOM.Joko.ServoCAT.ViewModel {
 
     public class SetupVM : BaseVM {
 
-        public SetupVM(IServoCatOptions servoCatOptions) {
+        public SetupVM(IServoCatOptions servoCatOptions, ISerialUtilities serialUtilities) {
             this.ServoCatOptions = servoCatOptions;
+            this.AvailableCOMPorts = serialUtilities.GetAvailableCOMPorts();
         }
 
         public IServoCatOptions ServoCatOptions { get; private set; }
 
-        public static bool Show(IServoCatOptions servoCatOptions) {
+        public string[] AvailableCOMPorts { get; private set; }
+
+        public static bool Show(IServoCatOptions servoCatOptions, ISerialUtilities serialUtilities) {
             return Application.Current.Dispatcher.Invoke(() => {
                 var optionsClone = servoCatOptions.Clone();
-                var setupVM = new SetupVM(optionsClone);
+                var setupVM = new SetupVM(optionsClone, serialUtilities);
                 var mainwindow = Application.Current.MainWindow;
                 Window win = new Setup {
                     DataContext = setupVM,
