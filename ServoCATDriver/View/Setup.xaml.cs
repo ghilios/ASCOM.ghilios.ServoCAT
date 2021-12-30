@@ -10,7 +10,10 @@
 
 #endregion "copyright"
 
+using PostSharp.Patterns.Xaml;
+using System;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ASCOM.Joko.ServoCAT.View {
 
@@ -18,9 +21,35 @@ namespace ASCOM.Joko.ServoCAT.View {
     /// Interaction logic for Setup.xaml
     /// </summary>
     public partial class Setup : Window {
+        private object validationErrorsLock = new object();
 
         public Setup() {
             InitializeComponent();
         }
+
+        private void Window_ContentRendered(object sender, System.EventArgs e) {
+            InvalidateVisual();
+        }
+
+        private void Button_OK_Click(object sender, RoutedEventArgs e) {
+            DialogResult = true;
+        }
+
+        private void Button_Cancel_Click(object sender, RoutedEventArgs e) {
+            DialogResult = false;
+        }
+
+        private void InputValidation_Error(object sender, ValidationErrorEventArgs e) {
+            if (e.Action == ValidationErrorEventAction.Added) {
+                ++ValidationErrors;
+            } else {
+                --ValidationErrors;
+            }
+        }
+
+        [DependencyProperty]
+        public int ValidationErrors { get; set; }
+
+        public static DependencyProperty ValidationErrorsProperty { get; private set; }
     }
 }

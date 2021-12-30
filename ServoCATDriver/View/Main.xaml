@@ -12,7 +12,113 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ASCOM.Joko.ServoCAT.View"
         mc:Ignorable="d"
-        Title="ServoCAT" Height="450" Width="800">
-    <Grid>
+        Title="ServoCAT" SizeToContent="WidthAndHeight"
+        Background="{StaticResource PrimaryBackgroundBrush}">
+    <Window.Resources>
+        <ResourceDictionary>
+            <DataTemplate x:Key="MainDisplayGrid">
+                <Grid Margin="0,5,0,5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Grid.Row="1" Grid.Column="0"
+                        Text="LST"
+                        Style="{StaticResource PropertyTextLabel}" />
+                    <TextBlock
+                        Grid.Row="2" Grid.Column="0"
+                        Text="RA"
+                        Style="{StaticResource PropertyTextLabel}" />
+                    <TextBlock
+                        Grid.Row="3" Grid.Column="0"
+                        Text="Dec"
+                        Style="{StaticResource PropertyTextLabel}" />
+                    <TextBlock
+                        Grid.Row="4" Grid.Column="0"
+                        Text="Az"
+                        Style="{StaticResource PropertyTextLabel}" />
+                    <TextBlock
+                        Grid.Row="5" Grid.Column="0"
+                        Text="Alt"
+                        Style="{StaticResource PropertyTextLabel}" />
+                    <TextBlock
+                        Grid.Row="6" Grid.Column="0"
+                        Text="Lat"
+                        Style="{StaticResource PropertyTextLabel}" />
+                    <TextBlock
+                        Grid.Row="7" Grid.Column="0"
+                        Text="Long"
+                        Style="{StaticResource PropertyTextLabel}" />
+                </Grid>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" SharedSizeGroup="MainCol0" />
+            <ColumnDefinition Width="*" SharedSizeGroup="MainCol1" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ContentControl
+            Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+            Content="{Binding}"
+            ContentTemplate="{StaticResource MainDisplayGrid}" />
+        <Button
+            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+            Height="20"
+            Margin="2"
+            Style="{StaticResource ActionButton}">
+            <TextBlock Text="Connect" />
+        </Button>
+        <Button
+            Grid.Row="3" Grid.Column="0"
+            Style="{StaticResource ActionButton}"
+            Margin="2">
+            <TextBlock Text="Park" />
+        </Button>
+        <Button
+            Grid.Row="3" Grid.Column="1"
+            Style="{StaticResource ActionButton}"
+            Margin="2"
+            Command="{Binding SetupCommand}">
+            <TextBlock Text="Setup" />
+        </Button>
+        <StackPanel
+            Orientation="Horizontal"
+            HorizontalAlignment="Center"
+            Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
+            <TextBlock
+                Text="Clients"
+                Style="{StaticResource PropertyTextLabel}" />
+        </StackPanel>
+        <StackPanel
+            Orientation="Horizontal"
+            HorizontalAlignment="Center"
+            Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2">
+            <TextBlock
+                Text="Connections"
+                Style="{StaticResource PropertyTextLabel}" />
+        </StackPanel>
     </Grid>
 </Window>

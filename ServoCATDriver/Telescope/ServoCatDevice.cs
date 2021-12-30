@@ -59,6 +59,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<ICRSCoordinates> GetCoordinates(CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             var response = await SendCommandFixedResponse($"{0x0D}", 16, ct);
             EnsureCharacter(response, ' ', 0);
@@ -79,6 +80,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<ExtendedStatusResult> GetExtendedStatus(CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             var response = await SendCommandFixedResponse($"{0x0E}", 20, ct);
             var expectedXor = response[19];
@@ -108,6 +110,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<FirmwareVersion> GetVersion(CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             // Pre-6.1 the v command won't return anything, so if we don't get a response within 1 second treat it as version 60._
             var response = await SendCommandMaybeFixedResponse("v", 5, ct, TimeSpan.FromSeconds(1));
@@ -130,6 +133,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<bool> GotoLegacy(ICRSCoordinates coordinates, CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             var sign = coordinates.Dec.NonNegative ? "+" : "-";
             var absDec = coordinates.Dec.ToAbsolute();
@@ -149,6 +153,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<bool> GotoExtendedPrecision(ICRSCoordinates coordinates, CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             var sign = coordinates.Dec.NonNegative ? "+" : "-";
             var absDec = coordinates.Dec.ToAbsolute();
@@ -168,6 +173,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<bool> EnableTracking(CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             if (firmwareVersion.Version > 60) {
                 var response = await SendCommandFixedResponse("RI", 1, ct);
@@ -182,6 +188,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<bool> DisableTracking(Axis axis, CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             string command;
             if (axis == Axis.ALT) {
@@ -208,6 +215,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<bool> Park(CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             if (firmwareVersion.Version > 60) {
                 var response = await SendCommandFixedResponse("P", 1, ct);
@@ -220,6 +228,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<bool> Unpark(CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             if (firmwareVersion.Version > 60) {
                 var response = await SendCommandFixedResponse("p", 1, ct);
@@ -232,6 +241,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
 
         public async Task<bool> Move(Direction direction, SlewRate rate, CancellationToken ct) {
             EnsureChannelOpen();
+            channel.FlushReadExisting();
 
             var command = $"M{(char)direction}{(byte)rate}";
             var commandBytes = new byte[4];

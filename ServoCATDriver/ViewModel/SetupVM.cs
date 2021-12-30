@@ -11,6 +11,10 @@
 #endregion "copyright"
 
 using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.Joko.ServoCAT.View;
+using System;
+using System.Windows;
+using System.Windows.Input;
 
 namespace ASCOM.Joko.ServoCAT.ViewModel {
 
@@ -21,5 +25,29 @@ namespace ASCOM.Joko.ServoCAT.ViewModel {
         }
 
         public IServoCatOptions ServoCatOptions { get; private set; }
+
+        public static bool Show(IServoCatOptions servoCatOptions) {
+            return Application.Current.Dispatcher.Invoke(() => {
+                var optionsClone = servoCatOptions.Clone();
+                var setupVM = new SetupVM(optionsClone);
+                var mainwindow = Application.Current.MainWindow;
+                Window win = new Setup {
+                    DataContext = setupVM,
+                    Title = "ServoCAT Options",
+                    WindowStyle = WindowStyle.ToolWindow
+                };
+                win.Owner = mainwindow;
+                win.Closed += (object sender, EventArgs e) => {
+                    Application.Current.MainWindow.Focus();
+                };
+
+                if (win.ShowDialog() == true) {
+                    optionsClone.Save();
+                    servoCatOptions.CopyFrom(optionsClone);
+                    return true;
+                }
+                return false;
+            });
+        }
     }
 }

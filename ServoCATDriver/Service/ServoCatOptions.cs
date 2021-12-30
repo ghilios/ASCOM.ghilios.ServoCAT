@@ -21,18 +21,19 @@ namespace ASCOM.Joko.ServoCAT.Service {
     [NotifyPropertyChanged]
     public class ServoCatOptions : BaseINPC, IServoCatOptions {
         private readonly IProfile ascomProfile;
+        private readonly ISharedState sharedState;
         private readonly string driverId;
         private const string profileSubKey = "astrometry_settings";
 
         public ServoCatOptions([Named("Telescope")] IProfile ascomProfile, ISharedState sharedState) {
             this.ascomProfile = ascomProfile;
+            this.sharedState = sharedState;
             this.driverId = sharedState.TelescopeDriverId;
-            Load();
         }
 
         public void Load() {
-            Longitude = ascomProfile.GetDouble(driverId, "longitude", profileSubKey, double.NaN);
-            Latitude = ascomProfile.GetDouble(driverId, "latitude", profileSubKey, double.NaN);
+            Longitude = ascomProfile.GetDouble(driverId, "longitude", profileSubKey, 0.0d);
+            Latitude = ascomProfile.GetDouble(driverId, "latitude", profileSubKey, 0.0d);
             Elevation = ascomProfile.GetDouble(driverId, "elevation", profileSubKey, 0.0d);
             SerialPort = ascomProfile.GetString(driverId, "serialPort", profileSubKey, null);
             UseJ2000 = ascomProfile.GetBool(driverId, "useJ2000", profileSubKey, false);
@@ -48,8 +49,19 @@ namespace ASCOM.Joko.ServoCAT.Service {
             ascomProfile.WriteEnum(driverId, "connectionType", profileSubKey, ConnectionType);
         }
 
-        public bool CoordinatesSet {
-            get => !double.IsNaN(Longitude) && !double.IsNaN(Latitude) && !double.IsNaN(Elevation);
+        public void CopyFrom(IServoCatOptions servoCatOptions) {
+            this.Longitude = servoCatOptions.Longitude;
+            this.Latitude = servoCatOptions.Latitude;
+            this.Elevation = servoCatOptions.Elevation;
+            this.SerialPort = servoCatOptions.SerialPort;
+            this.UseJ2000 = servoCatOptions.UseJ2000;
+            this.ConnectionType = servoCatOptions.ConnectionType;
+        }
+
+        public IServoCatOptions Clone() {
+            var clone = new ServoCatOptions(ascomProfile, sharedState);
+            clone.CopyFrom(this);
+            return clone;
         }
 
         public double Latitude { get; set; }

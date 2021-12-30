@@ -59,7 +59,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>Resources\LocalServer.snk</AssemblyOriginatorKeyFile>
@@ -150,6 +150,9 @@
     <Reference Include="PostSharp.Patterns.Model, Version=6.10.5.0, Culture=neutral, PublicKeyToken=e7f631e6ce13f078, processorArchitecture=MSIL">
       <HintPath>..\packages\PostSharp.Patterns.Model.Redist.6.10.5\lib\net45\PostSharp.Patterns.Model.dll</HintPath>
     </Reference>
+    <Reference Include="PostSharp.Patterns.Xaml, Version=6.10.5.0, Culture=neutral, PublicKeyToken=e7f631e6ce13f078, processorArchitecture=MSIL">
+      <HintPath>..\packages\PostSharp.Patterns.Xaml.Redist.6.10.5\lib\net45\PostSharp.Patterns.Xaml.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -176,16 +179,20 @@
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="ToggleSwitch, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ToggleSwitch.1.2.0\lib\net46\ToggleSwitch.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Astrometry\Angle.cs" />
     <Compile Include="Astrometry\AstrometryConverter.cs" />
-    <Compile Include="Astrometry\EnumDescriptionTypeConverter.cs" />
     <Compile Include="Astrometry\Epoch.cs" />
     <Compile Include="Astrometry\ICRSCoordinates.cs" />
     <Compile Include="Astrometry\TopocentricCoordinates.cs" />
     <Compile Include="Converters\EnumStaticDescriptionTypeConverter.cs" />
+    <Compile Include="Converters\ZeroToBooleanConverter.cs" />
+    <Compile Include="Converters\PositiveIntToBooleanConverter.cs" />
     <Compile Include="Exceptions\UnexpectedResponseException.cs" />
     <Compile Include="Interfaces\IChannel.cs" />
     <Compile Include="Interfaces\IChannelFactory.cs" />
@@ -224,6 +231,7 @@
     <Compile Include="Utility\RelayCommand.cs" />
     <Compile Include="Utility\WindowService.cs" />
     <Compile Include="Utility\WPFExtensions.cs" />
+    <Compile Include="ValidationRules\DoubleRangeRule.cs" />
     <Compile Include="ViewModel\BaseVM.cs" />
     <Compile Include="ViewModel\SetupVM.cs" />
     <Compile Include="View\Main.xaml.cs">
@@ -269,7 +277,28 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </ApplicationDefinition>
+    <Page Include="Properties\DesignTimeResources.xaml" Condition="'$(DesignTime)'=='true' OR ('$(SolutionPath)'!='' AND Exists('$(SolutionPath)') AND '$(BuildingInsideVisualStudio)'!='true' AND '$(BuildingInsideExpressionBlend)'!='true')">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+      <ContainsDesignTimeResources>true</ContainsDesignTimeResources>
+    </Page>
     <Page Include="Resources\DataTemplates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\StaticResources\Converters.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\StaticResources\ValidationRules.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\Styles\Brushes.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\Styles\TextBoxStyles.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -302,8 +331,6 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\PostSharp.6.10.5\build\PostSharp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\PostSharp.6.10.5\build\PostSharp.props'))" />
     <Error Condition="!Exists('..\packages\PostSharp.6.10.5\build\PostSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\PostSharp.6.10.5\build\PostSharp.targets'))" />
-    <Error Condition="!Exists('..\packages\StrongNamer.0.2.5\build\StrongNamer.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\StrongNamer.0.2.5\build\StrongNamer.targets'))" />
   </Target>
   <Import Project="..\packages\PostSharp.6.10.5\build\PostSharp.targets" Condition="Exists('..\packages\PostSharp.6.10.5\build\PostSharp.targets')" />
-  <Import Project="..\packages\StrongNamer.0.2.5\build\StrongNamer.targets" Condition="Exists('..\packages\StrongNamer.0.2.5\build\StrongNamer.targets')" />
 </Project>

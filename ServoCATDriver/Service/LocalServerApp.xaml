@@ -13,6 +13,10 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="..\Resources\Styles\Brushes.xaml" />
+                <ResourceDictionary Source="..\Resources\Styles\TextBoxStyles.xaml" />
+                <ResourceDictionary Source="..\Resources\StaticResources\Converters.xaml" />
+                <ResourceDictionary Source="..\Resources\StaticResources\ValidationRules.xaml" />
                 <ResourceDictionary Source="..\Resources\DataTemplates.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

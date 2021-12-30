@@ -46,7 +46,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
             Bind<AstrometryConverter>().To<AstrometryConverter>().InSingletonScope();
             Bind<Util>().To<Util>().InSingletonScope();
             Bind<IDriverConnectionManager>().To<DriverConnectionManager>().InSingletonScope();
-            Bind<IServoCatOptions>().To<ServoCatOptions>().InSingletonScope();
+            Bind<IServoCatOptions>().To<ServoCatOptions>().InSingletonScope().OnActivation(x => x.Load());
             Bind<IServoCatDeviceFactory>().To<IServoCatDeviceFactory>().InSingletonScope();
             Bind<ISharedState>().To<SharedState>().InSingletonScope();
             Bind<IProfile>().ToMethod(CreateTelescopeProfile).InSingletonScope().Named("Telescope");

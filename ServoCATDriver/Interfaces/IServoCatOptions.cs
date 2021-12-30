@@ -27,11 +27,14 @@ namespace ASCOM.Joko.ServoCAT.Interfaces {
 
         void Load();
 
+        void CopyFrom(IServoCatOptions servoCatOptions);
+
+        IServoCatOptions Clone();
+
         double Latitude { get; set; }
         double Longitude { get; set; }
         double Elevation { get; set; }
         ConnectionType ConnectionType { get; set; }
-        bool CoordinatesSet { get; }
         string SerialPort { get; set; }
         bool UseJ2000 { get; set; }
     }
