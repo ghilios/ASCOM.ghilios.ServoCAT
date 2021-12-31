@@ -10,10 +10,10 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Converters;
+using ASCOM.ghilios.ServoCAT.Converters;
 using System.ComponentModel;
 
-namespace ASCOM.Joko.ServoCAT.Astrometry {
+namespace ASCOM.ghilios.ServoCAT.Astrometry {
 
     [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
     public enum Epoch {

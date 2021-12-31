@@ -16,7 +16,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.Astrometry {
+namespace ASCOM.ghilios.ServoCAT.Astrometry {
 
     public class ICRSCoordinates {
 

@@ -12,9 +12,9 @@
 
 using System;
 using System.ComponentModel;
-using ASCOM.Joko.ServoCAT.Converters;
+using ASCOM.ghilios.ServoCAT.Converters;
 
-namespace ASCOM.Joko.ServoCAT.Interfaces {
+namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
     public enum ConnectionType {

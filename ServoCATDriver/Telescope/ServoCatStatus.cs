@@ -10,10 +10,10 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Astrometry;
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 
-namespace ASCOM.Joko.ServoCAT.Telescope {
+namespace ASCOM.ghilios.ServoCAT.Telescope {
 
     public class ServoCatStatus {
 

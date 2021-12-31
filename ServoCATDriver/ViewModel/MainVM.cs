@@ -10,15 +10,15 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
-using ASCOM.Joko.ServoCAT.Utility;
+using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.Utilities;
 using Ninject;
 using System;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.ghilios.ServoCAT.ViewModel {
 
     public class MainVM : BaseVM, IMainVM {
         private readonly TraceLogger Logger;

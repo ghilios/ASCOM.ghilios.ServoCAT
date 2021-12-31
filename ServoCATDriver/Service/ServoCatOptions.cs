@@ -10,14 +10,14 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
-using ASCOM.Joko.ServoCAT.Utility;
+using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.Utilities.Interfaces;
 using Ninject;
 using PostSharp.Patterns.Model;
 using System;
 
-namespace ASCOM.Joko.ServoCAT.Service {
+namespace ASCOM.ghilios.ServoCAT.Service {
 
     [NotifyPropertyChanged]
     public class ServoCatOptions : BaseINPC, IServoCatOptions {

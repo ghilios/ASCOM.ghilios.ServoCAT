@@ -16,7 +16,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace ASCOM.Joko.ServoCAT.Telescope {
+namespace ASCOM.ghilios.ServoCAT.Telescope {
 
     #region Rate class
 
@@ -24,7 +24,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
     // The Rate class implements IRate, and is used to hold values
     // for AxisRates. You do not need to change this class.
     //
-    // The Guid attribute sets the CLSID for ASCOM.Joko.ServoCAT.Rate
+    // The Guid attribute sets the CLSID for ASCOM.ghilios.ServoCAT.Rate
     // The ClassInterface/None attribute prevents an empty interface called
     // _Rate from being created and used as the [default] interface
     //
@@ -72,7 +72,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
     // both COM and .NET. The IAxisRates and IEnumerable interfaces provide
     // this polymorphism.
     //
-    // The Guid attribute sets the CLSID for ASCOM.Joko.ServoCAT.AxisRates
+    // The Guid attribute sets the CLSID for ASCOM.ghilios.ServoCAT.AxisRates
     // The ClassInterface/None attribute prevents an empty interface called
     // _AxisRates from being created and used as the [default] interface
     //
@@ -148,7 +148,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
     // both COM and .NET. The ITrackingRates and IEnumerable interfaces provide
     // this polymorphism.
     //
-    // The Guid attribute sets the CLSID for ASCOM.Joko.ServoCAT.TrackingRates
+    // The Guid attribute sets the CLSID for ASCOM.ghilios.ServoCAT.TrackingRates
     // The ClassInterface/None attribute prevents an empty interface called
     // _TrackingRates from being created and used as the [default] interface
     //

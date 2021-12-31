@@ -8,7 +8,7 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:converters="clr-namespace:ASCOM.Joko.ServoCAT.Converters">
+    xmlns:converters="clr-namespace:ASCOM.ghilios.ServoCAT.Converters">
     <converters:PositiveIntToBooleanConverter x:Key="PositiveIntToBooleanConverter" />
     <converters:ZeroToBooleanConverter x:Key="ZeroToBooleanConverter" />
     <converters:EnumStaticDescriptionValueConverter x:Key="EnumStaticDescriptionValueConverter" />

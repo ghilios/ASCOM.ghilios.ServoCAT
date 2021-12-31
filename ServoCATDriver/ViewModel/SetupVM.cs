@@ -10,12 +10,12 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
-using ASCOM.Joko.ServoCAT.View;
+using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.View;
 using System;
 using System.Windows;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.ghilios.ServoCAT.ViewModel {
 
     public class SetupVM : BaseVM {
 

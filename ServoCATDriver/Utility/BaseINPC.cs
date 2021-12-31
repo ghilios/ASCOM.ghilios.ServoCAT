@@ -14,7 +14,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
-namespace ASCOM.Joko.ServoCAT.Utility {
+namespace ASCOM.ghilios.ServoCAT.Utility {
 
     [System.Serializable()]
     [DataContract]

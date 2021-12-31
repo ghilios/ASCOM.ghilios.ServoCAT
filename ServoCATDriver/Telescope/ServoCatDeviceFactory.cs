@@ -10,12 +10,12 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Astrometry;
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.Utilities;
 using Ninject;
 
-namespace ASCOM.Joko.ServoCAT.Telescope {
+namespace ASCOM.ghilios.ServoCAT.Telescope {
 
     public class ServoCatDeviceFactory : IServoCatDeviceFactory {
         private readonly IServoCatOptions options;

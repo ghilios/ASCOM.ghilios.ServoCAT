@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ASCOM.Joko.ServoCAT.ValidationRules {
+namespace ASCOM.ghilios.ServoCAT.ValidationRules {
 
     public class DoubleRangeRule : ValidationRule {
         public DoubleRangeChecker ValidRange { get; set; }

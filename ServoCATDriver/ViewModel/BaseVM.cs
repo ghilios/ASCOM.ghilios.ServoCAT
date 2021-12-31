@@ -10,9 +10,9 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Utility;
+using ASCOM.ghilios.ServoCAT.Utility;
 
-namespace ASCOM.Joko.ServoCAT.ViewModel {
+namespace ASCOM.ghilios.ServoCAT.ViewModel {
 
     public class BaseVM : BaseINPC {
     }

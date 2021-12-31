@@ -8,6 +8,6 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:rules="clr-namespace:ASCOM.Joko.ServoCAT.ValidationRules">
+    xmlns:rules="clr-namespace:ASCOM.ghilios.ServoCAT.ValidationRules">
     <rules:DoubleRangeRule x:Key="DoubleRangeRule" />
 </ResourceDictionary>

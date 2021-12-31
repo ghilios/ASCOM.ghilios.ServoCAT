@@ -13,19 +13,19 @@
 using ASCOM.Astrometry.AstroUtils;
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.Astrometry.SOFA;
-using ASCOM.Joko.ServoCAT.Astrometry;
-using ASCOM.Joko.ServoCAT.Interfaces;
-using ASCOM.Joko.ServoCAT.IO;
-using ASCOM.Joko.ServoCAT.Telescope;
-using ASCOM.Joko.ServoCAT.Utility;
-using ASCOM.Joko.ServoCAT.ViewModel;
+using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.IO;
+using ASCOM.ghilios.ServoCAT.Telescope;
+using ASCOM.ghilios.ServoCAT.Utility;
+using ASCOM.ghilios.ServoCAT.ViewModel;
 using ASCOM.Utilities;
 using ASCOM.Utilities.Interfaces;
 using Ninject;
 using Ninject.Activation;
 using Ninject.Modules;
 
-namespace ASCOM.Joko.ServoCAT.Service {
+namespace ASCOM.ghilios.ServoCAT.Service {
 
     public static class CompositionRoot {
 
@@ -40,8 +40,8 @@ namespace ASCOM.Joko.ServoCAT.Service {
 
         public override void Load() {
             Bind<IMainVM>().To<MainVM>().InSingletonScope();
-            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("Joko.ServoCAT.Server")).InSingletonScope().Named("Server");
-            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("Joko.ServoCAT.Telescope")).InSingletonScope().Named("Telescope");
+            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("ghilios.ServoCAT.Server")).InSingletonScope().Named("Server");
+            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("ghilios.ServoCAT.Telescope")).InSingletonScope().Named("Telescope");
             Bind<IAstroUtils>().To<AstroUtils>().InSingletonScope();
             Bind<ISOFA>().To<SOFA>().InSingletonScope();
             Bind<INOVAS31>().To<NOVAS31>().InSingletonScope();

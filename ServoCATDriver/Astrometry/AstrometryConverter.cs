@@ -12,10 +12,10 @@
 
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.Astrometry.SOFA;
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using System;
 
-namespace ASCOM.Joko.ServoCAT.Astrometry {
+namespace ASCOM.ghilios.ServoCAT.Astrometry {
 
     public class AstrometryConverter {
         private readonly INOVAS31 novas31;

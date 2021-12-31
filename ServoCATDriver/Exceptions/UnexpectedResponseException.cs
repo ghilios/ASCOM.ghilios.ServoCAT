@@ -13,7 +13,7 @@
 using System;
 using System.Text;
 
-namespace ASCOM.Joko.ServoCAT.Exceptions {
+namespace ASCOM.ghilios.ServoCAT.Exceptions {
 
     public class UnexpectedResponseException : Exception {
 

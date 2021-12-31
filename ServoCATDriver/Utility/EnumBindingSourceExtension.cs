@@ -13,7 +13,7 @@
 using System;
 using System.Windows.Markup;
 
-namespace ASCOM.Joko.ServoCAT.Utility {
+namespace ASCOM.ghilios.ServoCAT.Utility {
 
     public class EnumBindingSourceExtension : MarkupExtension {
         private Type _enumType;

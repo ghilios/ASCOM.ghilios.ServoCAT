@@ -10,16 +10,16 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Astrometry;
-using ASCOM.Joko.ServoCAT.Exceptions;
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Exceptions;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.Utilities;
 using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.Telescope {
+namespace ASCOM.ghilios.ServoCAT.Telescope {
 
     public class ServoCatDevice : IServoCatDevice {
         private readonly IChannel channel;

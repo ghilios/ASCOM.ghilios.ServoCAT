@@ -10,14 +10,14 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using PostSharp.Patterns.Model;
 using System;
 using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.IO {
+namespace ASCOM.ghilios.ServoCAT.IO {
 
     [NotifyPropertyChanged]
     public class SerialChannelConfig {

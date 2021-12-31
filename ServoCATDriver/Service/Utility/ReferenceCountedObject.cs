@@ -12,7 +12,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace ASCOM.Joko.ServoCAT.Service.Utility {
+namespace ASCOM.ghilios.ServoCAT.Service.Utility {
 
     [ComVisible(false)]
     public class ReferenceCountedObjectBase {

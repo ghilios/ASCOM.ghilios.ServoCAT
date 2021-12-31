@@ -12,7 +12,7 @@
 
 using System.Windows;
 
-namespace ASCOM.Joko.ServoCAT.View {
+namespace ASCOM.ghilios.ServoCAT.View {
 
     /// <summary>
     /// Interaction logic for Main.xaml

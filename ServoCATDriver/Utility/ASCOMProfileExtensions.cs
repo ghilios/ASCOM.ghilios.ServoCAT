@@ -14,7 +14,7 @@ using ASCOM.Utilities.Interfaces;
 using System;
 using System.Globalization;
 
-namespace ASCOM.Joko.ServoCAT.Utility {
+namespace ASCOM.ghilios.ServoCAT.Utility {
 
     public static class ASCOMProfileExtensions {
 

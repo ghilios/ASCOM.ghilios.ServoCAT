@@ -15,7 +15,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.IO {
+namespace ASCOM.ghilios.ServoCAT.IO {
 
     public static class StreamExtensions {
 

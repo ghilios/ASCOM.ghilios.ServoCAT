@@ -12,7 +12,7 @@
 
 using System;
 
-namespace ASCOM.Joko.ServoCAT.IO {
+namespace ASCOM.ghilios.ServoCAT.IO {
 
     public partial class DriverConnectionManager {
 

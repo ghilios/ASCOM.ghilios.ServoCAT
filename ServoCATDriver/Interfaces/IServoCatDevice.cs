@@ -10,12 +10,12 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Astrometry;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.Interfaces {
+namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     [Flags]
     public enum MotionStatusEnum : byte {

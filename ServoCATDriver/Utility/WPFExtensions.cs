@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 
-namespace ASCOM.Joko.ServoCAT.Utility {
+namespace ASCOM.ghilios.ServoCAT.Utility {
 
     internal static class OSInterop {
 

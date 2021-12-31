@@ -28,7 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ASCOM.Joko.ServoCAT.Service.Utility {
+namespace ASCOM.ghilios.ServoCAT.Service.Utility {
 
     /// <summary>
     /// The resources shared by all drivers and devices, in this example it's a serial port with a shared SendMessage method an idea for locking the message and handling connecting is given.

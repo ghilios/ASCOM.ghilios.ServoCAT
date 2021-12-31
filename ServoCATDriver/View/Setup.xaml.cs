@@ -15,7 +15,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ASCOM.Joko.ServoCAT.View {
+namespace ASCOM.ghilios.ServoCAT.View {
 
     /// <summary>
     /// Interaction logic for Setup.xaml

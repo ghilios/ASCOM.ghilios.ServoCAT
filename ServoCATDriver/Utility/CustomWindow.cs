@@ -13,7 +13,7 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace ASCOM.Joko.ServoCAT.Utility {
+namespace ASCOM.ghilios.ServoCAT.Utility {
 
     public class CustomWindow : Window {
 

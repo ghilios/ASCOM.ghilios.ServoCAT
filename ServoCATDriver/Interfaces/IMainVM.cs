@@ -12,7 +12,7 @@
 
 using System.ComponentModel;
 
-namespace ASCOM.Joko.ServoCAT.Interfaces {
+namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     public interface IMainVM : INotifyPropertyChanged {
         IServoCatOptions ServoCatOptions { get; }

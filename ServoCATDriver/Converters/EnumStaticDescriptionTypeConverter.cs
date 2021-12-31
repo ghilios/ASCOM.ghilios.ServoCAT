@@ -14,8 +14,10 @@ using System;
 using System.ComponentModel;
 using System.Reflection;
 
-namespace ASCOM.Joko.ServoCAT.Converters {
+namespace ASCOM.ghilios.ServoCAT.Converters {
+
     public class EnumStaticDescriptionTypeConverter : EnumConverter {
+
         public EnumStaticDescriptionTypeConverter(Type type)
             : base(type) {
         }

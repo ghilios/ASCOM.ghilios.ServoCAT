@@ -14,12 +14,12 @@ using ASCOM.Astrometry;
 using ASCOM.Astrometry.AstroUtils;
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.DeviceInterface;
-using ASCOM.Joko.ServoCAT.Astrometry;
-using ASCOM.Joko.ServoCAT.Interfaces;
-using ASCOM.Joko.ServoCAT.Service;
-using ASCOM.Joko.ServoCAT.Service.Utility;
-using ASCOM.Joko.ServoCAT.Utility;
-using ASCOM.Joko.ServoCAT.ViewModel;
+using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Service;
+using ASCOM.ghilios.ServoCAT.Service.Utility;
+using ASCOM.ghilios.ServoCAT.Utility;
+using ASCOM.ghilios.ServoCAT.ViewModel;
 using ASCOM.Utilities;
 using Ninject;
 using System;
@@ -31,18 +31,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ASCOM.Joko.ServoCAT.Telescope {
+namespace ASCOM.ghilios.ServoCAT.Telescope {
 
     //
-    // Your driver's DeviceID is ASCOM.Joko.ServoCAT.Telescope
+    // Your driver's DeviceID is ASCOM.ghilios.ServoCAT.Telescope
     //
-    // The Guid attribute sets the CLSID for ASCOM.Joko.ServoCAT.Telescope
+    // The Guid attribute sets the CLSID for ASCOM.ghilios.ServoCAT.Telescope
     // The ClassInterface/None attribute prevents an empty interface called
-    // _Joko.ServoCAT from being created and used as the [default] interface
+    // _ghilios.ServoCAT from being created and used as the [default] interface
     //
     [ComVisible(true)]
     [Guid("02891d62-2316-476e-93ad-bb4bea5ac154")]
-    [ProgId("ASCOM.Joko.ServoCAT.Telescope")]
+    [ProgId("ASCOM.ghilios.ServoCAT.Telescope")]
     [ServedClassName("ServoCAT Driver, by George Hilios")]
     [ClassInterface(ClassInterfaceType.None)]
     public class Telescope : ReferenceCountedObjectBase, ITelescopeV3 {
@@ -68,7 +68,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
         private CancellationTokenSource disconnectTokenSource;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Joko.ServoCAT"/> class. Must be public to successfully register for COM.
+        /// Initializes a new instance of the <see cref="ghilios.ServoCAT"/> class. Must be public to successfully register for COM.
         /// </summary>
         public Telescope() : this(
             sharedState: CompositionRoot.Kernel.Get<ISharedState>(),

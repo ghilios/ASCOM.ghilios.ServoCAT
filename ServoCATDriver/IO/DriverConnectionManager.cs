@@ -10,7 +10,7 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.Utilities;
 using Ninject;
 using Nito.AsyncEx;
@@ -20,7 +20,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.IO {
+namespace ASCOM.ghilios.ServoCAT.IO {
 
     public partial class DriverConnectionManager : IDriverConnectionManager {
         private readonly AsyncReaderWriterLock readerWriterLock;

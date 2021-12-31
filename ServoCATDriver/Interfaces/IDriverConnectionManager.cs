@@ -14,7 +14,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.Interfaces {
+namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     public interface IDriverConnectionManager {
         int RegisteredClientCount { get; }

@@ -10,8 +10,8 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Astrometry;
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.Utilities;
 using Ninject;
 using System;
@@ -19,7 +19,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.IO {
+namespace ASCOM.ghilios.ServoCAT.IO {
 
     public class SimulatorChannel : IChannel {
         private readonly IServoCatOptions options;

@@ -12,7 +12,7 @@
 
 using System;
 
-namespace ASCOM.Joko.ServoCAT.Astrometry {
+namespace ASCOM.ghilios.ServoCAT.Astrometry {
 
     public class Angle {
         public const double TWO_PI = 2.0d * Math.PI;

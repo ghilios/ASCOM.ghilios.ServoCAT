@@ -13,7 +13,7 @@
 using System;
 using System.Threading;
 
-namespace ASCOM.Joko.ServoCAT.Service.Utility {
+namespace ASCOM.ghilios.ServoCAT.Service.Utility {
 
     /// <summary>
     /// Summary description for GarbageCollection.

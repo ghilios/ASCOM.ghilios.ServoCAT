@@ -14,7 +14,7 @@ using System;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-namespace ASCOM.Joko.ServoCAT.Service.Utility {
+namespace ASCOM.ghilios.ServoCAT.Service.Utility {
 
     #region C# Definition of IClassFactory
 

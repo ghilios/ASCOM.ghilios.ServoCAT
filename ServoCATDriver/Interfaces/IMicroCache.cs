@@ -13,7 +13,7 @@
 using System;
 using System.Runtime.Caching;
 
-namespace ASCOM.Joko.ServoCAT.Interfaces {
+namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     public interface IMicroCache<T> {
 

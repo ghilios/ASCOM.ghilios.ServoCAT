@@ -10,7 +10,7 @@
 
 #endregion "copyright"
 
-namespace ASCOM.Joko.ServoCAT.Interfaces {
+namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     public interface ISerialUtilities {
 

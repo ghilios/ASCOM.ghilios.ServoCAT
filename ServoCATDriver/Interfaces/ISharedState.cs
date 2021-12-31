@@ -13,7 +13,7 @@
 using Ninject;
 using System;
 
-namespace ASCOM.Joko.ServoCAT.Interfaces {
+namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     public interface ISharedState {
         string TelescopeDriverId { get; }

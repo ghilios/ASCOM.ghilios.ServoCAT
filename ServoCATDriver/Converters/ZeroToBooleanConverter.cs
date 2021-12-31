@@ -13,7 +13,8 @@
 using System;
 using System.Windows.Data;
 
-namespace ASCOM.Joko.ServoCAT.Converters {
+namespace ASCOM.ghilios.ServoCAT.Converters {
+
     [ValueConversion(typeof(int), typeof(bool))]
     public class ZeroToBooleanConverter : IValueConverter {
 

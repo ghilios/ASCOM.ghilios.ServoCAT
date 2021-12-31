@@ -10,12 +10,12 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using Ninject;
 using System;
 using System.Runtime.InteropServices;
 
-namespace ASCOM.Joko.ServoCAT.Service {
+namespace ASCOM.ghilios.ServoCAT.Service {
 
     public class SharedState : ISharedState {
 

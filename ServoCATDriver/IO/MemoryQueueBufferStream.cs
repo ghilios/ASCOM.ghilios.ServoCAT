@@ -17,11 +17,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ASCOM.Joko.ServoCAT.IO {
+namespace ASCOM.ghilios.ServoCAT.IO {
+
     /// <summary>
     /// A stream that purges data as it is read. Copied from https://codereview.stackexchange.com/questions/93154/memoryqueuebufferstream
     /// </summary>
     public class MemoryQueueBufferStream : Stream {
+
         private class Chunk {
             public int ChunkReadStartIndex { get; set; }
             public byte[] Data { get; set; }

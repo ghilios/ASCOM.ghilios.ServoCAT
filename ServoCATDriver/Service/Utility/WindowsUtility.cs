@@ -12,7 +12,7 @@
 
 using System.Security.Principal;
 
-namespace ASCOM.Joko.ServoCAT.Service.Utility {
+namespace ASCOM.ghilios.ServoCAT.Service.Utility {
 
     public static class WindowsUtility {
 

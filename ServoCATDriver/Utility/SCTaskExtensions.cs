@@ -13,7 +13,7 @@
 using System;
 using System.Threading;
 
-namespace ASCOM.Joko.ServoCAT.Utility {
+namespace ASCOM.ghilios.ServoCAT.Utility {
 
     public static class SCTaskExtensions {
 

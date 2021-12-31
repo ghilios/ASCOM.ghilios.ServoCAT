@@ -15,7 +15,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace ASCOM.Joko.ServoCAT.Converters {
+namespace ASCOM.ghilios.ServoCAT.Converters {
 
     public class EnumStaticDescriptionValueConverter : IValueConverter {
 

@@ -10,9 +10,9 @@
 
 #endregion "copyright"
 
-using ASCOM.Joko.ServoCAT.Service.Utility;
-using ASCOM.Joko.ServoCAT.View;
-using ASCOM.Joko.ServoCAT.ViewModel;
+using ASCOM.ghilios.ServoCAT.Service.Utility;
+using ASCOM.ghilios.ServoCAT.View;
+using ASCOM.ghilios.ServoCAT.ViewModel;
 using ASCOM.Utilities;
 using Microsoft.Win32;
 using Ninject;
@@ -25,7 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ASCOM.Joko.ServoCAT.Service {
+namespace ASCOM.ghilios.ServoCAT.Service {
 
     /// <summary>
     /// Main entry point for the local driver server
@@ -175,7 +175,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
 
                     default:
                         ServerLogger.LogMessage("ProcessArguments", $"Unknown argument: {args[0]}");
-                        MessageBox.Show("Unknown argument: " + args[0] + "\nValid are : -register, -unregister and -embedding", "ASCOM.Joko.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        MessageBox.Show("Unknown argument: " + args[0] + "\nValid are : -register, -unregister and -embedding", "ASCOM.ghilios.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                         break;
                 }
             } else {
@@ -231,7 +231,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
                 ServerLogger.LogMessage("RegisterObjects", $"APPID set successfully");
             } catch (Exception ex) {
                 ServerLogger.LogMessageCrLf("RegisterObjects", $"Setting AppID exception: {ex}");
-                MessageBox.Show("Error while registering the server:\n" + ex.ToString(), "ASCOM.Joko.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
+                MessageBox.Show("Error while registering the server:\n" + ex.ToString(), "ASCOM.ghilios.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
                 return;
             }
 
@@ -282,7 +282,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
                     }
                 } catch (Exception ex) {
                     ServerLogger.LogMessageCrLf("RegisterObjects", $"Driver registration exception: {ex}");
-                    MessageBox.Show("Error while registering the server:\n" + ex.ToString(), "ASCOM.Joko.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
+                    MessageBox.Show("Error while registering the server:\n" + ex.ToString(), "ASCOM.ghilios.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
                     bFail = true;
                 }
 
@@ -357,11 +357,11 @@ namespace ASCOM.Joko.ServoCAT.Service {
                 ServerLogger.LogMessage("IsAdministrator", $"Starting elevated process");
                 Process.Start(processStartInfo);
             } catch (System.ComponentModel.Win32Exception) {
-                ServerLogger.LogMessage("IsAdministrator", $"The ASCOM.Joko.ServoCAT.Telescope was not " + (argument == "/register" ? "registered" : "unregistered because you did not allow it."));
-                MessageBox.Show("The ASCOM.Joko.ServoCAT.Telescope was not " + (argument == "/register" ? "registered" : "unregistered because you did not allow it.", "ASCOM.Joko.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Warning));
+                ServerLogger.LogMessage("IsAdministrator", $"The ASCOM.ghilios.ServoCAT.Telescope was not " + (argument == "/register" ? "registered" : "unregistered because you did not allow it."));
+                MessageBox.Show("The ASCOM.ghilios.ServoCAT.Telescope was not " + (argument == "/register" ? "registered" : "unregistered because you did not allow it.", "ASCOM.ghilios.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Warning));
             } catch (Exception ex) {
                 ServerLogger.LogMessageCrLf("IsAdministrator", $"Exception: {ex}");
-                MessageBox.Show(ex.ToString(), "ASCOM.Joko.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
+                MessageBox.Show(ex.ToString(), "ASCOM.ghilios.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
             }
             return;
         }
@@ -386,7 +386,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
                 ServerLogger.LogMessage("RegisterClassFactories", $"  Registering class factory for: {driverType.Name}");
                 if (!factory.RegisterClassObject()) {
                     ServerLogger.LogMessage("RegisterClassFactories", $"  Failed to register class factory for " + driverType.Name);
-                    MessageBox.Show($"Failed to register class factory for {driverType.Name}", "ASCOM.Joko.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
+                    MessageBox.Show($"Failed to register class factory for {driverType.Name}", "ASCOM.ghilios.ServoCAT.Telescope", MessageBoxButton.OK, MessageBoxImage.Stop);
                     return false;
                 }
                 ServerLogger.LogMessage("RegisterClassFactories", $"  Registered class factory OK for: {driverType.Name}");
