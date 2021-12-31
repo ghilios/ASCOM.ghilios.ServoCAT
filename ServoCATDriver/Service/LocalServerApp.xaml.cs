@@ -38,6 +38,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
         private ArrayList driverTypes;
         private ArrayList classFactories = new ArrayList();
         private const string LOCAL_SERVER_APPID = "{289163c8-6579-4b32-90d2-68fb447a01df}";
+        private Main mainWindow;
 
         private readonly object serverLock = new object();
         private Task GCTask;
@@ -50,11 +51,10 @@ namespace ASCOM.Joko.ServoCAT.Service {
         protected override void OnStartup(StartupEventArgs e) {
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
 
-            // Create a trace logger for the local server.
-            ServerLogger = new TraceLogger("", "ASCOM.LocalServer") {
+            ServerLogger = new TraceLogger("", "ghilios.ServoCAT.LocalServer") {
                 Enabled = true
             };
-            ServerLogger.LogMessage("Main", $"Joko ServoCAT Server started");
+            ServerLogger.LogMessage("Main", $"ghilios ServoCAT Server started");
 
             // Load driver COM assemblies and get types, ending the program if something goes wrong.
             ServerLogger.LogMessage("Main", $"Loading drivers");
@@ -74,14 +74,19 @@ namespace ASCOM.Joko.ServoCAT.Service {
             driversInUseCount = 0;
             serverLockCount = 0;
             mainThreadId = GetCurrentThreadId();
-            Thread.CurrentThread.Name = "Joko.ServoCAT Local Server Thread";
+            Thread.CurrentThread.Name = "ghilios ServoCAT Local Server Thread";
 
             ServerLogger.LogMessage("Main", $"Creating host window");
             var mainVM = CompositionRoot.Kernel.Get<MainVM>();
 
-            // TODO: Try using WindowService
-            Main mainWindow = new Main();
+            mainWindow = new Main();
+            mainWindow.WindowStyle = WindowStyle.ToolWindow;
+            mainWindow.Title = "ServoCAT";
             mainWindow.DataContext = mainVM;
+            if (startedByCOM) {
+                mainWindow.Visibility = Visibility.Hidden;
+            }
+
             mainWindow.Show();
 
             // Register the class factories of the served objects
@@ -122,7 +127,7 @@ namespace ASCOM.Joko.ServoCAT.Service {
         }
 
         private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
-            ServerLogger.LogMessage("Main", $"Joko ServoCAT Server exited with an unhandled exception: {e.Exception.GetType()}, {e.Exception.Message}");
+            ServerLogger.LogMessage("Main", $"ghilios ServoCAT Server exited with an unhandled exception: {e.Exception.GetType()}, {e.Exception.Message}");
 
             e.Handled = true;
             Current.Shutdown();

@@ -43,8 +43,8 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
                 await channel.Open(ct);
             }
 
-            firmwareVersion = await GetVersion(ct);
             initialized = true;
+            firmwareVersion = await GetVersion(ct);
         }
 
         private void EnsureChannelOpen() {
@@ -61,7 +61,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             EnsureChannelOpen();
             channel.FlushReadExisting();
 
-            var response = await SendCommandFixedResponse($"{0x0D}", 16, ct);
+            var response = await SendCommandFixedResponse(new byte[] { 0x0D }, 16, ct);
             EnsureCharacter(response, ' ', 0);
             var raHoursWhole = GetUIntFromRange(response, 1, 2);
             EnsureCharacter(response, '.', 3);
@@ -74,7 +74,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             EnsureCharacter(response, '\0', 15);
 
             var ra = Angle.ByHours((double)raHoursWhole + (double)raHoursFractional / 1000.0d);
-            var dec = Angle.ByDegree((double)decDegreesWhole + (double)decDegreesFractional / 1000.0d * (sign ? 1 : -1));
+            var dec = Angle.ByDegree(((double)decDegreesWhole + (double)decDegreesFractional / 1000.0d) * (sign ? 1 : -1));
             return new ICRSCoordinates(ra, dec, Epoch.J2000);
         }
 
@@ -82,7 +82,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             EnsureChannelOpen();
             channel.FlushReadExisting();
 
-            var response = await SendCommandFixedResponse($"{0x0E}", 20, ct);
+            var response = await SendCommandFixedResponse(new byte[] { 0x0E }, 20, ct);
             var expectedXor = response[19];
             var actualXor = XORResponse(response, 1, 18);
             if (expectedXor != actualXor) {
@@ -98,9 +98,10 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             var decDegreesWhole = GetUIntFromRange(response, 11, 2);
             EnsureCharacter(response, '.', 13);
             var decDegreesFractional = GetUIntFromRange(response, 14, 4);
+
             var motionStatus = (MotionStatusEnum)response[18];
             var ra = Angle.ByHours((double)raHoursWhole + (double)raHoursFractional / 100000.0d);
-            var dec = Angle.ByDegree((double)decDegreesWhole + (double)decDegreesFractional / 10000.0d * (sign ? 1 : -1));
+            var dec = Angle.ByDegree(((double)decDegreesWhole + (double)decDegreesFractional / 10000.0d) * (sign ? 1 : -1));
             var coordinates = new ICRSCoordinates(ra, dec, Epoch.J2000);
             return new ExtendedStatusResult() {
                 Coordinates = coordinates,
@@ -115,10 +116,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             // Pre-6.1 the v command won't return anything, so if we don't get a response within 1 second treat it as version 60._
             var response = await SendCommandMaybeFixedResponse("v", 5, ct, TimeSpan.FromSeconds(1));
             if (response.Length == 0) {
-                return new FirmwareVersion() {
-                    Version = 60,
-                    SubVersion = '_'
-                };
+                return FirmwareVersion.GetDefault();
             }
 
             var version = (ushort)GetUIntFromRange(response, 0, 2);
@@ -243,9 +241,7 @@ namespace ASCOM.Joko.ServoCAT.Telescope {
             EnsureChannelOpen();
             channel.FlushReadExisting();
 
-            var command = $"M{(char)direction}{(byte)rate}";
-            var commandBytes = new byte[4];
-            Encoding.ASCII.GetBytes(command, 0, command.Length - 1, commandBytes, 0);
+            var commandBytes = new byte[] { (byte)'M', (byte)direction, (byte)rate, 0 };
             commandBytes[3] = (byte)(commandBytes[1] ^ commandBytes[2]);
             if (firmwareVersion.Version > 60) {
                 var response = await SendCommandFixedResponse(commandBytes, 1, ct);

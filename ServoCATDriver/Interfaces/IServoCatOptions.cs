@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using System;
 using System.ComponentModel;
 using ASCOM.Joko.ServoCAT.Converters;
 
@@ -36,6 +37,11 @@ namespace ASCOM.Joko.ServoCAT.Interfaces {
         double Elevation { get; set; }
         ConnectionType ConnectionType { get; set; }
         string SerialPort { get; set; }
+        FirmwareVersion SimulatorVersion { get; set; }
+        bool SimulatorAligned { get; set; }
         bool UseJ2000 { get; set; }
+        TimeSpan TelescopeStatusCacheTTL { get; }
+        TimeSpan DeviceRequestTimeout { get; }
+        TimeSpan SlewTimeout { get; }
     }
 }

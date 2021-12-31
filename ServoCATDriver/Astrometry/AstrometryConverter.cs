@@ -48,7 +48,30 @@ namespace ASCOM.Joko.ServoCAT.Astrometry {
 
             var az = Angle.ByRadians(aob);
             var alt = Angle.ByRadians(Angle.HALF_PI - zob);
-            return new TopocentricCoordinates(az, alt, latitude, longitude, options.Elevation, now);
+            return new TopocentricCoordinates(altitude: alt, azimuth: az, latitude: latitude, longitude: longitude, elevation: options.Elevation, referenceDateTime: now);
+        }
+
+        public ICRSCoordinates ToCelestial(TopocentricCoordinates coordinates, Epoch targetEpoch) {
+            var jdUTC = GetJulianDate(coordinates.ReferenceDateTime);
+            var zenithDistance = Angle.ByDegree(90d - coordinates.Altitude.Degrees);
+            var zenithDistanceRadians = zenithDistance.Radians;
+            var deltaT = novas31.DeltaT(jdUTC);
+
+            var raRad = 0d;
+            var decRad = 0d;
+            // No refraction correction
+            double pressurehPa = 0.0d;
+            double tempCelcius = 0.0d;
+            double relativeHumidity = 0.0d;
+            double wavelength = 0.5d;
+            sofa.Atoc13(
+                "A", coordinates.Azimuth.Radians, zenithDistanceRadians, jdUTC, 0d, deltaT,
+                coordinates.Longitude.Radians, coordinates.Latitude.Radians, coordinates.Elevation,
+                0d, 0d, pressurehPa, tempCelcius, relativeHumidity, wavelength, ref raRad, ref decRad);
+            var ra = Angle.ByRadians(raRad);
+            var dec = Angle.ByRadians(decRad);
+            var celestialCoordinates = new ICRSCoordinates(ra: ra, dec: dec, epoch: Epoch.J2000, referenceDateTime: coordinates.ReferenceDateTime);
+            return TransformEpoch(celestialCoordinates, targetEpoch);
         }
 
         public ICRSCoordinates TransformEpoch(ICRSCoordinates coordinates, Epoch targetEpoch) {
@@ -66,7 +89,7 @@ namespace ASCOM.Joko.ServoCAT.Astrometry {
                 var raApparent = Angle.ByRadians(sofa.Anp(ri - eo));
                 var decApparent = Angle.ByRadians(di);
 
-                return new ICRSCoordinates(raApparent, decApparent, Epoch.JNOW, now);
+                return new ICRSCoordinates(ra: raApparent, dec: decApparent, epoch: Epoch.JNOW, referenceDateTime: now);
             } else {
                 // J2000
                 var jdTT = GetJdTT(coordinates.ReferenceDateTime);
@@ -77,7 +100,7 @@ namespace ASCOM.Joko.ServoCAT.Astrometry {
                 var raCelestial = Angle.ByRadians(rc);
                 var decCelestial = Angle.ByRadians(dc);
 
-                return new ICRSCoordinates(raCelestial, decCelestial, Epoch.J2000, coordinates.ReferenceDateTime);
+                return new ICRSCoordinates(ra: raCelestial, dec: decCelestial, epoch: Epoch.J2000, referenceDateTime: coordinates.ReferenceDateTime);
             }
         }
 

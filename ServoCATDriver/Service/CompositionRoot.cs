@@ -16,6 +16,8 @@ using ASCOM.Astrometry.SOFA;
 using ASCOM.Joko.ServoCAT.Astrometry;
 using ASCOM.Joko.ServoCAT.Interfaces;
 using ASCOM.Joko.ServoCAT.IO;
+using ASCOM.Joko.ServoCAT.Telescope;
+using ASCOM.Joko.ServoCAT.Utility;
 using ASCOM.Joko.ServoCAT.ViewModel;
 using ASCOM.Utilities;
 using ASCOM.Utilities.Interfaces;
@@ -38,8 +40,8 @@ namespace ASCOM.Joko.ServoCAT.Service {
 
         public override void Load() {
             Bind<IMainVM>().To<MainVM>().InSingletonScope();
-            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("ASCOM.Joko.ServoCAT.Server")).InSingletonScope().Named("Server");
-            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("ASCOM.Joko.ServoCAT.Telescope")).InSingletonScope().Named("Telescope");
+            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("Joko.ServoCAT.Server")).InSingletonScope().Named("Server");
+            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("Joko.ServoCAT.Telescope")).InSingletonScope().Named("Telescope");
             Bind<IAstroUtils>().To<AstroUtils>().InSingletonScope();
             Bind<ISOFA>().To<SOFA>().InSingletonScope();
             Bind<INOVAS31>().To<NOVAS31>().InSingletonScope();
@@ -48,8 +50,10 @@ namespace ASCOM.Joko.ServoCAT.Service {
             Bind<ISerialUtilities>().To<SerialUtilities>().InSingletonScope();
             Bind<IDriverConnectionManager>().To<DriverConnectionManager>().InSingletonScope();
             Bind<IServoCatOptions>().To<ServoCatOptions>().InSingletonScope().OnActivation(x => x.Load());
-            Bind<IServoCatDeviceFactory>().To<IServoCatDeviceFactory>().InSingletonScope();
+            Bind<IServoCatDeviceFactory>().To<ServoCatDeviceFactory>().InSingletonScope();
+            Bind<IChannelFactory>().To<ChannelFactory>().InSingletonScope();
             Bind<ISharedState>().To<SharedState>().InSingletonScope();
+            Bind<IMicroCacheFactory>().To<MicroCacheFactory>().InSingletonScope();
             Bind<IProfile>().ToMethod(CreateTelescopeProfile).InSingletonScope().Named("Telescope");
         }
 

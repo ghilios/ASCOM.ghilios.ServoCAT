@@ -198,6 +198,7 @@
     <Compile Include="Interfaces\IChannel.cs" />
     <Compile Include="Interfaces\IChannelFactory.cs" />
     <Compile Include="Interfaces\IDriverConnectionManager.cs" />
+    <Compile Include="Interfaces\IMicroCache.cs" />
     <Compile Include="Interfaces\ISerialUtilities.cs" />
     <Compile Include="Interfaces\IServoCatDevice.cs" />
     <Compile Include="Interfaces\IServoCatDeviceFactory.cs" />
@@ -210,6 +211,7 @@
     <Compile Include="IO\SerialPortExtensions.cs" />
     <Compile Include="IO\SerialUtilities.cs" />
     <Compile Include="IO\SimulatorChannel.cs" />
+    <Compile Include="IO\StreamExtensions.cs" />
     <Compile Include="Service\CompositionRoot.cs" />
     <Compile Include="Service\ServoCatOptions.cs" />
     <Compile Include="Interfaces\IMainVM.cs" />
@@ -227,12 +229,14 @@
     <Compile Include="Telescope\Rates.cs" />
     <Compile Include="Service\Utility\GarbageCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Threading\TaskExtensions.cs" />
+    <Compile Include="Telescope\ServoCatStatus.cs" />
     <Compile Include="Utility\ASCOMProfileExtensions.cs" />
     <Compile Include="Utility\BaseINPC.cs" />
     <Compile Include="Utility\CustomWindow.cs" />
     <Compile Include="Utility\EnumBindingSourceExtension.cs" />
+    <Compile Include="Utility\MicroCache.cs" />
     <Compile Include="Utility\RelayCommand.cs" />
+    <Compile Include="Utility\SCTaskExtensions.cs" />
     <Compile Include="Utility\WindowService.cs" />
     <Compile Include="Utility\WPFExtensions.cs" />
     <Compile Include="ValidationRules\DoubleRangeRule.cs" />

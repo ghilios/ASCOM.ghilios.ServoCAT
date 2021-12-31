@@ -102,6 +102,12 @@ namespace ASCOM.Joko.ServoCAT.Astrometry {
         }
 
         private static string Format(double units, string pattern) {
+            if (double.IsNaN(units)) {
+                return "NaN";
+            } else if (double.IsInfinity(units)) {
+                return "Inf";
+            }
+
             var negative = false;
             var degrees = units;
             if (degrees < 0) {

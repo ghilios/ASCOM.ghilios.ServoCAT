@@ -15,6 +15,7 @@ using ASCOM.Joko.ServoCAT.Utility;
 using ASCOM.Utilities.Interfaces;
 using Ninject;
 using PostSharp.Patterns.Model;
+using System;
 
 namespace ASCOM.Joko.ServoCAT.Service {
 
@@ -38,6 +39,14 @@ namespace ASCOM.Joko.ServoCAT.Service {
             SerialPort = ascomProfile.GetString(driverId, "serialPort", profileSubKey, null);
             UseJ2000 = ascomProfile.GetBool(driverId, "useJ2000", profileSubKey, false);
             ConnectionType = ascomProfile.GetEnum(driverId, "connectionType", profileSubKey, ConnectionType.Simulator);
+            var simulatorFirmwareVersion = ascomProfile.GetInt32(driverId, "simulatorFirmwareVersion", profileSubKey, 61);
+            var simulatorFirmwareSubVersion = ascomProfile.GetString(driverId, "simulatorFirmwareSubVersion", profileSubKey, "C");
+            if (simulatorFirmwareVersion < 61 || simulatorFirmwareVersion >= 100 || simulatorFirmwareSubVersion.Length != 1) {
+                SimulatorVersion = FirmwareVersion.GetDefault();
+            } else {
+                SimulatorVersion = new FirmwareVersion() { Version = (ushort)simulatorFirmwareVersion, SubVersion = simulatorFirmwareSubVersion[0] };
+            }
+            SimulatorAligned = ascomProfile.GetBool(driverId, "simulatorAligned", profileSubKey, true);
         }
 
         public void Save() {
@@ -47,6 +56,9 @@ namespace ASCOM.Joko.ServoCAT.Service {
             ascomProfile.WriteString(driverId, "serialPort", profileSubKey, SerialPort);
             ascomProfile.WriteBool(driverId, "useJ2000", profileSubKey, UseJ2000);
             ascomProfile.WriteEnum(driverId, "connectionType", profileSubKey, ConnectionType);
+            ascomProfile.WriteInt32(driverId, "simulatorFirmwareVersion", profileSubKey, SimulatorVersion.Version);
+            ascomProfile.WriteString(driverId, "simulatorFirmwareSubVersion", profileSubKey, $"{SimulatorVersion.SubVersion}");
+            ascomProfile.WriteBool(driverId, "simulatorAligned", profileSubKey, SimulatorAligned);
         }
 
         public void CopyFrom(IServoCatOptions servoCatOptions) {
@@ -56,6 +68,8 @@ namespace ASCOM.Joko.ServoCAT.Service {
             this.SerialPort = servoCatOptions.SerialPort;
             this.UseJ2000 = servoCatOptions.UseJ2000;
             this.ConnectionType = servoCatOptions.ConnectionType;
+            this.SimulatorVersion = servoCatOptions.SimulatorVersion;
+            this.SimulatorAligned = servoCatOptions.SimulatorAligned;
         }
 
         public IServoCatOptions Clone() {
@@ -74,5 +88,10 @@ namespace ASCOM.Joko.ServoCAT.Service {
 
         public bool UseJ2000 { get; set; }
         public ConnectionType ConnectionType { get; set; }
+        public FirmwareVersion SimulatorVersion { get; set; }
+        public bool SimulatorAligned { get; set; }
+        public TimeSpan TelescopeStatusCacheTTL => TimeSpan.FromMilliseconds(500);
+        public TimeSpan DeviceRequestTimeout => TimeSpan.FromSeconds(3);
+        public TimeSpan SlewTimeout => TimeSpan.FromMinutes(1);
     }
 }

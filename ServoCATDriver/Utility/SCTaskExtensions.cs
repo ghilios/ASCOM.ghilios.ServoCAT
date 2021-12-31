@@ -13,12 +13,12 @@
 using System;
 using System.Threading;
 
-namespace ASCOM.Joko.ServoCAT.Threading {
+namespace ASCOM.Joko.ServoCAT.Utility {
 
-    public static class TaskExtensions {
+    public static class SCTaskExtensions {
 
-        public static CancellationToken TimeoutCancellationToken(TimeSpan duration) {
-            var cts = new CancellationTokenSource(duration);
+        public static CancellationToken TimeoutCancellationToken(TimeSpan timeout) {
+            var cts = new CancellationTokenSource(timeout);
             return cts.Token;
         }
     }

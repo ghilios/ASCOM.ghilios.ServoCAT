@@ -10,7 +10,12 @@
 
 #endregion "copyright"
 
+using ASCOM.Joko.ServoCAT.Astrometry;
 using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.Utilities;
+using Ninject;
+using System;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,13 +24,25 @@ namespace ASCOM.Joko.ServoCAT.IO {
     public class SimulatorChannel : IChannel {
         private readonly IServoCatOptions options;
         private readonly DriverAccess.Telescope simulatorTelescope;
-
         private readonly MemoryQueueBufferStream memoryStream;
+        private readonly AstrometryConverter astrometryConverter;
+        private readonly TraceLogger logger;
+        private bool lastMoveIsSlew;
 
-        public SimulatorChannel(IServoCatOptions options) {
+        private Axis trackingState;
+
+        public SimulatorChannel(IServoCatOptions options, AstrometryConverter astrometryConverter, [Named("Telescope")] TraceLogger logger) {
             this.options = options;
+            this.astrometryConverter = astrometryConverter;
+            this.logger = logger;
             simulatorTelescope = new DriverAccess.Telescope("ASCOM.Simulator.Telescope");
+            simulatorTelescope.SiteLatitude = options.Latitude;
+            simulatorTelescope.SiteLongitude = options.Longitude;
+            simulatorTelescope.SiteElevation = options.Elevation;
+
             memoryStream = new MemoryQueueBufferStream();
+            trackingState = Axis.NONE;
+            lastMoveIsSlew = true;
         }
 
         public bool IsOpen => simulatorTelescope.Connected;
@@ -45,19 +62,253 @@ namespace ASCOM.Joko.ServoCAT.IO {
 
         public Task Open(CancellationToken ct) {
             simulatorTelescope.Connected = true;
+            trackingState = Axis.NONE;
+            lastMoveIsSlew = true;
             return Task.CompletedTask;
         }
 
         public Task<byte[]> ReadBytes(int byteCount, CancellationToken ct) {
-            throw new System.NotImplementedException();
+            return memoryStream.ReadAsync(byteCount, ct);
         }
 
         public Task<byte[]> ReadUntil(string terminator, CancellationToken ct) {
             throw new System.NotImplementedException();
         }
 
-        public Task Write(byte[] data, CancellationToken ct) {
-            throw new System.NotImplementedException();
+        public async Task Write(byte[] data, CancellationToken ct) {
+            if (CommandMatch(data, new byte[] { 0x0D })) {
+                await GetCoordinatesRequest();
+            } else if (CommandMatch(data, new byte[] { 0x0E })) {
+                await GetExtendedStatusRequest();
+            } else if (CommandMatch(data, "v")) {
+                await VersionRequest();
+            } else if (CommandStartsWith(data, "M")) {
+                await MoveRequest(data);
+            } else if (CommandStartsWith(data, "g")) {
+                await GotoLegacyRequest(data);
+            } else if (CommandStartsWith(data, "G")) {
+                await GotoExtendedPrecisionRequest(data);
+            } else if (CommandMatch(data, "RI")) {
+                await EnableTracking();
+            } else if (CommandMatch(data, "RF")) {
+                await DisableTracking(Axis.BOTH, 'F');
+            } else if (CommandMatch(data, "RZ")) {
+                await DisableTracking(Axis.AZ, 'Z');
+            } else if (CommandMatch(data, "RE")) {
+                await DisableTracking(Axis.ALT, 'E');
+            } else if (CommandMatch(data, "P")) {
+                await Park();
+            } else if (CommandMatch(data, "p")) {
+                await Unpark();
+            }
+        }
+
+        private ICRSCoordinates GetCoordinates() {
+            var ra = Angle.ByHours(simulatorTelescope.RightAscension);
+            var dec = Angle.ByDegree(simulatorTelescope.Declination);
+            var epoch = simulatorTelescope.EquatorialSystem == DeviceInterface.EquatorialCoordinateType.equTopocentric ? Epoch.JNOW : Epoch.J2000;
+            var icrsCoordinates = new ICRSCoordinates(ra: ra, dec: dec, epoch: epoch);
+            return astrometryConverter.TransformEpoch(icrsCoordinates, Epoch.J2000);
+        }
+
+        private async Task GetCoordinatesRequest() {
+            var tranformedIcrsCoordinates = GetCoordinates();
+            var sign = tranformedIcrsCoordinates.Dec.NonNegative ? '+' : '-';
+            var response = $" {tranformedIcrsCoordinates.RA.Hours:00.000} {sign}{tranformedIcrsCoordinates.Dec.ToAbsolute().Degrees:00.000}\0";
+            await WriteResponse(response);
+        }
+
+        private async Task GetExtendedStatusRequest() {
+            var tranformedIcrsCoordinates = GetCoordinates();
+            var sign = tranformedIcrsCoordinates.Dec.NonNegative ? '+' : '-';
+            var motionState = MotionStatusEnum.NONE;
+            if (simulatorTelescope.Tracking) {
+                motionState |= MotionStatusEnum.TRACK;
+            }
+            if (simulatorTelescope.Slewing) {
+                if (lastMoveIsSlew) {
+                    motionState |= MotionStatusEnum.GOTO;
+                } else {
+                    motionState |= MotionStatusEnum.USER_MOTION;
+                }
+            }
+            if (simulatorTelescope.AtPark) {
+                motionState |= MotionStatusEnum.PARK;
+            }
+            if (options.SimulatorAligned) {
+                motionState |= MotionStatusEnum.ALIGN;
+            }
+
+            var response = $" {tranformedIcrsCoordinates.RA.Hours:00.00000} {sign}{tranformedIcrsCoordinates.Dec.ToAbsolute().Degrees:00.0000}";
+            var responseBytes = new byte[20];
+            Encoding.ASCII.GetBytes(response, 0, response.Length, responseBytes, 0);
+            responseBytes[18] = (byte)motionState;
+            responseBytes[19] = XORResponse(responseBytes, 1, 18);
+
+            if (!options.SimulatorAligned) {
+                // If not aligned, it can take up to 0.5 seconds to respond
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+            }
+            await WriteResponse(responseBytes);
+        }
+
+        private async Task MoveRequest(byte[] request) {
+            throw new NotImplementedException();
+        }
+
+        private async Task GotoExtendedPrecisionRequest(byte[] request) {
+            var expectedXOR = XORResponse(request, 1, request.Length - 1);
+            var actualXOR = request[18];
+            if (expectedXOR != actualXOR) {
+                logger.LogMessage("GotoExtendedPrecisionRequest", "Failed - XOR validation");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'X' });
+                return;
+            }
+
+            try {
+                var requestString = Encoding.ASCII.GetString(request);
+                var raHours = double.Parse(requestString.Substring(1, 8));
+                var sign = requestString[10] == '+' ? 1 : -1;
+                var decDegrees = double.Parse(requestString.Substring(11, 7)) * sign;
+                simulatorTelescope.SlewToCoordinatesAsync(RightAscension: raHours, Declination: decDegrees);
+            } catch (Exception e) {
+                logger.LogMessage("GotoExtendedPrecisionRequest", $"Failed - {e.Message}");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'X' });
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await WriteResponse(new byte[] { (byte)'G' });
+        }
+
+        private async Task GotoLegacyRequest(byte[] request) {
+            var expectedXOR = XORResponse(request, 1, request.Length - 1);
+            var actualXOR = request[15];
+            if (expectedXOR != actualXOR) {
+                logger.LogMessage("GotoLegacyRequest", "Failed - XOR validation");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'X' });
+                return;
+            }
+
+            try {
+                var requestString = Encoding.ASCII.GetString(request);
+                var raHours = double.Parse(requestString.Substring(1, 6));
+                var sign = requestString[8] == '+' ? 1 : -1;
+                var decDegrees = double.Parse(requestString.Substring(9, 6)) * sign;
+                simulatorTelescope.SlewToCoordinatesAsync(RightAscension: raHours, Declination: decDegrees);
+            } catch (Exception e) {
+                logger.LogMessage("GotoExtendedPrecisionRequest", $"Failed - {e.Message}");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'X' });
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await WriteResponse(new byte[] { (byte)'g' });
+        }
+
+        private async Task Unpark() {
+            var success = false;
+            try {
+                simulatorTelescope.Unpark();
+                success = true;
+            } catch (Exception) {
+            }
+
+            if (options.SimulatorVersion.SubVersion > 60 && success) {
+                await WriteResponse("p");
+            }
+        }
+
+        private async Task Park() {
+            var success = false;
+            try {
+                simulatorTelescope.Park();
+                success = true;
+            } catch (Exception) {
+            }
+
+            if (options.SimulatorVersion.SubVersion > 60 && success) {
+                await WriteResponse("P");
+            }
+        }
+
+        private async Task DisableTracking(Axis disableAxes, char response) {
+            var success = false;
+            try {
+                trackingState = trackingState & ~disableAxes;
+                if (trackingState == Axis.NONE) {
+                    simulatorTelescope.Tracking = false;
+                }
+                success = true;
+            } catch (Exception) {
+            }
+
+            if (options.SimulatorVersion.SubVersion > 60 && success) {
+                await WriteResponse($"{response}");
+            }
+        }
+
+        private async Task EnableTracking() {
+            var success = false;
+            try {
+                simulatorTelescope.Tracking = true;
+                success = true;
+            } catch (Exception) {
+            }
+
+            if (options.SimulatorVersion.SubVersion > 60 && success) {
+                await WriteResponse("I");
+            }
+        }
+
+        private async Task VersionRequest() {
+            var version = options.SimulatorVersion;
+            var response = $"{version.Version:00}.{version.SubVersion}\0";
+            if (options.SimulatorVersion.SubVersion > 60) {
+                await WriteResponse(response);
+            }
+        }
+
+        private async Task WriteResponse(string response) {
+            var responseBytes = Encoding.ASCII.GetBytes(response);
+            await WriteResponse(responseBytes);
+        }
+
+        private async Task WriteResponse(byte[] responseBytes) {
+            await memoryStream.WriteAsync(responseBytes, 0, responseBytes.Length);
+        }
+
+        private static bool CommandMatch(byte[] data, string command) {
+            var commandBytes = Encoding.ASCII.GetBytes(command);
+            return CommandMatch(data, commandBytes);
+        }
+
+        private static bool CommandMatch(byte[] data, byte[] commandBytes) {
+            return ByteArrayEqual(data, commandBytes);
+        }
+
+        private static bool CommandStartsWith(byte[] data, string command) {
+            var commandBytes = Encoding.ASCII.GetBytes(command);
+            if (data.Length < command.Length) {
+                return false;
+            }
+            return ByteArrayEqual(data.AsSpan(0, commandBytes.Length), commandBytes);
+        }
+
+        private static bool ByteArrayEqual(ReadOnlySpan<byte> a1, ReadOnlySpan<byte> a2) {
+            return a1.SequenceEqual(a2);
+        }
+
+        private static byte XORResponse(byte[] response, int startOffset, int length) {
+            byte result = 0;
+            for (int i = startOffset; i < startOffset + length; ++i) {
+                result = (byte)(result ^ response[i]);
+            }
+            return result;
         }
     }
 }

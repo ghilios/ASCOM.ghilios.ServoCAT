@@ -16,14 +16,18 @@ namespace ASCOM.Joko.ServoCAT.Service.Utility {
 
     [ComVisible(false)]
     public class ReferenceCountedObjectBase {
+        private bool constructed = false;
 
         public ReferenceCountedObjectBase() {
             LocalServerApp.App.IncrementObjectCount();
+            constructed = true;
         }
 
         ~ReferenceCountedObjectBase() {
-            LocalServerApp.App.DecrementObjectCount();
-            LocalServerApp.App.ExitIf();
+            if (constructed) {
+                LocalServerApp.App.DecrementObjectCount();
+                LocalServerApp.App.ExitIf();
+            }
         }
     }
 }

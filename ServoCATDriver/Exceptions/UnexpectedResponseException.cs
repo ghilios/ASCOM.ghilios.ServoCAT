@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using System;
+using System.Text;
 
 namespace ASCOM.Joko.ServoCAT.Exceptions {
 
@@ -19,18 +20,22 @@ namespace ASCOM.Joko.ServoCAT.Exceptions {
         public UnexpectedResponseException(string message) : base(message) {
         }
 
+        private static string ResponseEpilogue(byte[] response) {
+            return $"{Environment.NewLine}{BitConverter.ToString(response)}{Environment.NewLine}{Encoding.ASCII.GetString(response)}";
+        }
+
         public static UnexpectedResponseException ExpectedByteInResponse(byte[] response, string expected, int offset) {
-            var msg = $"Expected {expected} at byte {offset} within response from server {BitConverter.ToString(response)}";
+            var msg = $"Expected {expected} at byte {offset} within response from server.{ResponseEpilogue(response)}";
             return new UnexpectedResponseException(msg);
         }
 
         public static UnexpectedResponseException ExpectedIntInResponse(byte[] response, int offset, int length) {
-            var msg = $"Expected integer at start from {offset}, {length} bytes long within response from server. {BitConverter.ToString(response)}";
+            var msg = $"Expected integer at start from {offset}, {length} bytes long within response from server.{ResponseEpilogue(response)}";
             return new UnexpectedResponseException(msg);
         }
 
         public static UnexpectedResponseException XORValidationFailed(byte[] response, int offset, int length, byte actualXor, byte expectedXor) {
-            var msg = $"Failed XOR validation from {offset}, {length} bytes. ExpectedXOR={expectedXor}, ActualXOR={actualXor}. {BitConverter.ToString(response)}";
+            var msg = $"Failed XOR validation from {offset}, {length} bytes. ExpectedXOR={expectedXor}, ActualXOR={actualXor}.{ResponseEpilogue(response)}";
             return new UnexpectedResponseException(msg);
         }
     }

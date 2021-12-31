@@ -60,5 +60,16 @@ namespace ASCOM.Joko.ServoCAT.Utility {
         public static void WriteEnum<T>(this IProfile profile, string driverId, string name, string subkey, T value) where T : struct, Enum {
             profile.WriteValue(driverId, name, Enum.GetName(typeof(T), value), subkey);
         }
+
+        public static int GetInt32(this IProfile profile, string driverId, string name, string subkey, int defaultvalue) {
+            if (int.TryParse(profile.GetValue(driverId, name, subkey, ""), NumberStyles.Float, CultureInfo.InvariantCulture, out var result)) {
+                return result;
+            }
+            return defaultvalue;
+        }
+
+        public static void WriteInt32(this IProfile profile, string driverId, string name, string subkey, int value) {
+            profile.WriteValue(driverId, name, value.ToString(CultureInfo.InvariantCulture), subkey);
+        }
     }
 }

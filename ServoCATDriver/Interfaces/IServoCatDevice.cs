@@ -19,6 +19,7 @@ namespace ASCOM.Joko.ServoCAT.Interfaces {
 
     [Flags]
     public enum MotionStatusEnum : byte {
+        NONE = 0,
         TRACK = 1,
         USER_MOTION = 2,
         GOTO = 4,
@@ -32,12 +33,21 @@ namespace ASCOM.Joko.ServoCAT.Interfaces {
     }
 
     public struct FirmwareVersion {
+
+        public static FirmwareVersion GetDefault() {
+            return new FirmwareVersion() {
+                Version = 60,
+                SubVersion = '_'
+            };
+        }
+
         public ushort Version { get; set; }
         public char SubVersion { get; set; }
     }
 
     [Flags]
     public enum Axis : byte {
+        NONE = 0,
         AZ = 1,
         ALT = 2,
         BOTH = AZ | ALT

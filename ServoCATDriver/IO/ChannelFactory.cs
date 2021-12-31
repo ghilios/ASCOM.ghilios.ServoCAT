@@ -10,24 +10,32 @@
 
 #endregion "copyright"
 
+using ASCOM.Joko.ServoCAT.Astrometry;
 using ASCOM.Joko.ServoCAT.Interfaces;
+using ASCOM.Utilities;
+using Ninject;
 
 namespace ASCOM.Joko.ServoCAT.IO {
 
     public class ChannelFactory : IChannelFactory {
         private readonly IServoCatOptions options;
+        private readonly AstrometryConverter astrometryConverter;
+        private readonly TraceLogger logger;
 
-        public ChannelFactory(IServoCatOptions options) {
+        public ChannelFactory(IServoCatOptions options, AstrometryConverter astrometryConverter, [Named("Telescope")] TraceLogger logger) {
             this.options = options;
+            this.astrometryConverter = astrometryConverter;
+            this.logger = logger;
         }
 
         public IChannel Create() {
             if (options.ConnectionType == ConnectionType.Simulator) {
-                return new SimulatorChannel(options);
-            } else {
-                // Serial
+                return new SimulatorChannel(options, astrometryConverter, logger);
+            } else if (options.ConnectionType == ConnectionType.Serial) {
                 var serialConfig = SerialChannelConfig.CreateDefaultConfig(options.SerialPort);
                 return new SerialChannel(serialConfig);
+            } else {
+                throw new NotImplementedException();
             }
         }
     }
