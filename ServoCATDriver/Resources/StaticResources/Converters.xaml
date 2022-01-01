@@ -11,5 +11,8 @@
     xmlns:converters="clr-namespace:ASCOM.ghilios.ServoCAT.Converters">
     <converters:PositiveIntToBooleanConverter x:Key="PositiveIntToBooleanConverter" />
     <converters:ZeroToBooleanConverter x:Key="ZeroToBooleanConverter" />
+    <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
     <converters:EnumStaticDescriptionValueConverter x:Key="EnumStaticDescriptionValueConverter" />
+    <converters:AngleDMSConverter x:Key="AngleDMSConverter" />
+    <converters:AngleHMSConverter x:Key="AngleHMSConverter" />
 </ResourceDictionary>

@@ -34,13 +34,13 @@ namespace ASCOM.ghilios.ServoCAT.Service {
     /// </summary>
     public partial class LocalServerApp : Application {
         private uint mainThreadId;
-        private bool startedByCOM; // True if server started by COM (-embedding)
         private int driversInUseCount;
         private volatile int serverLockCount;
         private ArrayList driverTypes;
         private ArrayList classFactories = new ArrayList();
         private const string LOCAL_SERVER_APPID = "{289163c8-6579-4b32-90d2-68fb447a01df}";
         private Main mainWindow;
+        private IMainVM mainVM;
         private IDriverConnectionManager driverConnectionManager;
 
         private readonly object serverLock = new object();
@@ -54,9 +54,9 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         protected override void OnStartup(StartupEventArgs e) {
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
 
-            ServerLogger = new TraceLogger("", "ghilios.ServoCAT.LocalServer") {
-                Enabled = true
-            };
+            ServerLogger = CompositionRoot.Kernel.Get<TraceLogger>("Server");
+            // TODO: Make this configurable
+            ServerLogger.Enabled = true;
             ServerLogger.LogMessage("Main", $"ghilios ServoCAT Server started");
 
             // Load driver COM assemblies and get types, ending the program if something goes wrong.
@@ -85,13 +85,13 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             driverConnectionManager.OnConnected += DriverConnectionManager_OnConnected;
             driverConnectionManager.OnDisconnected += DriverConnectionManager_OnDisconnected;
 
-            var mainVM = CompositionRoot.Kernel.Get<MainVM>();
+            mainVM = CompositionRoot.Kernel.Get<MainVM>();
 
             mainWindow = new Main();
             mainWindow.WindowStyle = WindowStyle.ToolWindow;
             mainWindow.Title = "ServoCAT";
             mainWindow.DataContext = mainVM;
-            if (!startedByCOM) {
+            if (!StartedByCOM) {
                 mainWindow.Show();
             }
 
@@ -105,6 +105,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ServerLogger.LogMessage("Main", $"Garbage collector thread started");
         }
 
+        public bool StartedByCOM { get; private set; }
+
         private object connectedClientsLock = new object();
         private HashSet<Guid> connectedClients = new HashSet<Guid>();
 
@@ -116,7 +118,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             }
 
             ServerLogger.LogMessage("Main", $"{e.ClientGuid} disconnected. {clientCount} connected clients remaining");
-            if (clientCount == 0 && startedByCOM) {
+            if (clientCount == 0 && StartedByCOM) {
                 ServerLogger.LogMessage("Main", $"Making main window hidden");
                 Dispatcher.Invoke(() => mainWindow.Hide());
             }
@@ -130,7 +132,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             }
 
             ServerLogger.LogMessage("Main", $"{e.ClientGuid} connected. {clientCount} connected clients");
-            if (clientCount == 1 && startedByCOM) {
+            if (clientCount == 1 && StartedByCOM) {
                 ServerLogger.LogMessage("Main", $"Making main window visible");
                 Dispatcher.Invoke(() => mainWindow.Show());
             }
@@ -188,7 +190,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                 switch (args[0].ToLower()) {
                     case "-embedding":
                         ServerLogger.LogMessage("ProcessArguments", $"Started by COM: {args[0]}");
-                        startedByCOM = true;
+                        StartedByCOM = true;
                         returnStatus = true;
                         break;
 
@@ -222,7 +224,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                         break;
                 }
             } else {
-                startedByCOM = false;
+                StartedByCOM = false;
                 ServerLogger.LogMessage("ProcessArguments", $"No arguments supplied");
             }
 
@@ -531,7 +533,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             lock (serverLock) {
                 ServerLogger.LogMessage("ExitIf", $"Object count: {ObjectCount}, Server lock count: {serverLockCount}");
                 if ((ObjectCount <= 0) && (ServerLockCount <= 0)) {
-                    if (startedByCOM) {
+                    if (StartedByCOM) {
                         ServerLogger.LogMessage("ExitIf", $"Server started by COM so shutting down the Windows message loop on the main process to end the local server.");
                         var wParam = UIntPtr.Zero;
                         var lParam = IntPtr.Zero;

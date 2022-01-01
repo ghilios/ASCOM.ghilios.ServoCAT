@@ -35,5 +35,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public TimeSpan DeviceReadTimeout => TimeSpan.FromSeconds(2);
 
         public TimeSpan DeviceWriteTimeout => TimeSpan.FromSeconds(2);
+
+        public bool StartedByCOM => LocalServerApp.App.StartedByCOM;
     }
 }

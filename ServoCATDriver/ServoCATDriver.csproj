@@ -190,8 +190,11 @@
     <Compile Include="Astrometry\Epoch.cs" />
     <Compile Include="Astrometry\ICRSCoordinates.cs" />
     <Compile Include="Astrometry\TopocentricCoordinates.cs" />
+    <Compile Include="Converters\AngleHMSConverter.cs" />
+    <Compile Include="Converters\AngleDMSConverter.cs" />
     <Compile Include="Converters\EnumStaticDescriptionTypeConverter.cs" />
     <Compile Include="Converters\EnumStaticDescriptionValueConverter.cs" />
+    <Compile Include="Converters\InverseBooleanConverter.cs" />
     <Compile Include="Converters\ZeroToBooleanConverter.cs" />
     <Compile Include="Converters\PositiveIntToBooleanConverter.cs" />
     <Compile Include="Exceptions\UnexpectedResponseException.cs" />

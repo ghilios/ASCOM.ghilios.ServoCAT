@@ -35,33 +35,49 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock
-                        Grid.Row="1" Grid.Column="0"
-                        Text="LST"
-                        Style="{StaticResource PropertyTextLabel}" />
-                    <TextBlock
                         Grid.Row="2" Grid.Column="0"
+                        Margin="4,2,4,2"
                         Text="RA"
                         Style="{StaticResource PropertyTextLabel}" />
                     <TextBlock
+                        Grid.Row="2" Grid.Column="1"
+                        Margin="4,2,4,2"
+                        Text="{Binding RA, Converter={StaticResource AngleHMSConverter}}"
+                        HorizontalAlignment="Stretch"
+                        Style="{StaticResource DeviceValueLabel}" />
+                    <TextBlock
                         Grid.Row="3" Grid.Column="0"
+                        Margin="4,2,4,2"
                         Text="Dec"
                         Style="{StaticResource PropertyTextLabel}" />
                     <TextBlock
+                        Grid.Row="3" Grid.Column="1"
+                        Margin="4,2,4,2"
+                        Text="{Binding Dec, Converter={StaticResource AngleDMSConverter}}"
+                        HorizontalAlignment="Stretch"
+                        Style="{StaticResource DeviceValueLabel}" />
+                    <TextBlock
                         Grid.Row="4" Grid.Column="0"
+                        Margin="4,2,4,2"
                         Text="Az"
                         Style="{StaticResource PropertyTextLabel}" />
                     <TextBlock
+                        Grid.Row="4" Grid.Column="1"
+                        Margin="4,2,4,2"
+                        Text="{Binding Azimuth, Converter={StaticResource AngleDMSConverter}}"
+                        HorizontalAlignment="Stretch"
+                        Style="{StaticResource DeviceValueLabel}" />
+                    <TextBlock
                         Grid.Row="5" Grid.Column="0"
+                        Margin="4,2,4,2"
                         Text="Alt"
                         Style="{StaticResource PropertyTextLabel}" />
                     <TextBlock
-                        Grid.Row="6" Grid.Column="0"
-                        Text="Lat"
-                        Style="{StaticResource PropertyTextLabel}" />
-                    <TextBlock
-                        Grid.Row="7" Grid.Column="0"
-                        Text="Long"
-                        Style="{StaticResource PropertyTextLabel}" />
+                        Grid.Row="5" Grid.Column="1"
+                        Margin="4,2,4,2"
+                        Text="{Binding Altitude, Converter={StaticResource AngleDMSConverter}}"
+                        HorizontalAlignment="Stretch"
+                        Style="{StaticResource DeviceValueLabel}" />
                 </Grid>
             </DataTemplate>
         </ResourceDictionary>
@@ -88,13 +104,28 @@
             Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
             Height="20"
             Margin="2"
-            Style="{StaticResource ActionButton}">
-            <TextBlock Text="Connect" />
+            Style="{StaticResource ActionButton}"
+            IsEnabled="{Binding ConnectionCount, Converter={StaticResource ZeroToBooleanConverter}}"
+            Command="{Binding ToggleConnectCommand}">
+            <TextBlock>
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="Text" Value="Connect" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Connected}" Value="True">
+                                <Setter Property="Text" Value="Disconnect" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </Button>
         <Button
             Grid.Row="3" Grid.Column="0"
             Style="{StaticResource ActionButton}"
-            Margin="2">
+            Margin="2"
+            IsEnabled="{Binding Connected}"
+            Command="{Binding ToggleParkCommand}">
             <TextBlock Text="Park" />
         </Button>
         <Button
@@ -105,20 +136,10 @@
             <TextBlock Text="Setup" />
         </Button>
         <StackPanel
-            Orientation="Horizontal"
-            HorizontalAlignment="Center"
-            Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
-            <TextBlock
-                Text="Clients"
-                Style="{StaticResource PropertyTextLabel}" />
-        </StackPanel>
-        <StackPanel
-            Orientation="Horizontal"
-            HorizontalAlignment="Center"
-            Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2">
-            <TextBlock
-                Text="Connections"
-                Style="{StaticResource PropertyTextLabel}" />
+            Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+            Orientation="Horizontal" HorizontalAlignment="Center">
+            <TextBlock Style="{StaticResource PropertyTextLabel}" Text="Connections:" Margin="0,4,0,2" />
+            <TextBlock Style="{StaticResource PropertyTextLabel}" Text="{Binding ConnectionCount}" Margin="4,4,2,2" />
         </StackPanel>
     </Grid>
 </Window>

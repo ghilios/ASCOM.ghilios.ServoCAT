@@ -27,5 +27,7 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         TimeSpan DeviceReadTimeout { get; }
 
         TimeSpan DeviceWriteTimeout { get; }
+
+        bool StartedByCOM { get; }
     }
 }

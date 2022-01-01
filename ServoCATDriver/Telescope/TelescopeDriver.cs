@@ -680,8 +680,9 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return elevation;
             }
             set {
-                Logger.LogMessage("SiteElevation Set", "Not implemented");
-                throw new PropertyNotImplementedException("SiteElevation", true);
+                Logger.LogMessage("SiteElevation Set", $"Set - {value}");
+                servoCatOptions.Elevation = value;
+                servoCatOptions.Save();
             }
         }
 
@@ -692,8 +693,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return latitude;
             }
             set {
-                Logger.LogMessage("SiteLatitude Set", "Not implemented");
-                throw new PropertyNotImplementedException("SiteLatitude", true);
+                Logger.LogMessage("SiteLatitude Set", $"Set - {value}");
+                if (value < -90.0d || value > 90.0d) {
+                    throw new InvalidValueException($"SiteLatitude must be between -90 and 90, inclusive");
+                }
+
+                servoCatOptions.Latitude = value;
+                servoCatOptions.Save();
             }
         }
 
@@ -704,8 +710,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return longitude;
             }
             set {
-                Logger.LogMessage("SiteLongitude Set", "Not implemented");
-                throw new PropertyNotImplementedException("SiteLongitude", true);
+                Logger.LogMessage("SiteLongitude Set", $"Set - {value}");
+                if (value < -180.0d || value > 180.0d) {
+                    throw new InvalidValueException($"SiteLongitude must be between -180 and 180, inclusive");
+                }
+
+                servoCatOptions.Longitude = value;
+                servoCatOptions.Save();
             }
         }
 
@@ -982,8 +993,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return DEFAULT_DRIVERATE;
             }
             set {
-                Logger.LogMessage("TrackingRate Set", "Not implemented");
-                throw new PropertyNotImplementedException("TrackingRate", true);
+                Logger.LogMessage("TrackingRate Set", $"Set - {value}");
+                if (value != DriveRates.driveSidereal) {
+                    throw new InvalidValueException();
+                }
             }
         }
 
