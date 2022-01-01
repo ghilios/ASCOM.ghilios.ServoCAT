@@ -22,6 +22,7 @@ using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.ghilios.ServoCAT.ViewModel;
 using ASCOM.Utilities;
 using Ninject;
+using Nito.AsyncEx;
 using System;
 using System.Collections;
 using System.Globalization;
@@ -33,17 +34,10 @@ using System.Windows;
 
 namespace ASCOM.ghilios.ServoCAT.Telescope {
 
-    //
-    // Your driver's DeviceID is ASCOM.ghilios.ServoCAT.Telescope
-    //
-    // The Guid attribute sets the CLSID for ASCOM.ghilios.ServoCAT.Telescope
-    // The ClassInterface/None attribute prevents an empty interface called
-    // _ghilios.ServoCAT from being created and used as the [default] interface
-    //
     [ComVisible(true)]
     [Guid("02891d62-2316-476e-93ad-bb4bea5ac154")]
     [ProgId("ASCOM.ghilios.ServoCAT.Telescope")]
-    [ServedClassName("ServoCAT Driver, by George Hilios")]
+    [ServedClassName("ServoCAT Driver")]
     [ClassInterface(ClassInterfaceType.None)]
     public class Telescope : ReferenceCountedObjectBase, ITelescopeV3 {
         private readonly IServoCatOptions servoCatOptions;
@@ -66,6 +60,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         private Angle targetRightAscension = Angle.ByDegree(double.NaN);
         private Angle targetDeclination = Angle.ByDegree(double.NaN);
         private CancellationTokenSource disconnectTokenSource;
+        private FirmwareVersion servoCatFirmwareVersion;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ghilios.ServoCAT"/> class. Must be public to successfully register for COM.
@@ -239,6 +234,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                         throw;
                     }
                     disconnectTokenSource = new CancellationTokenSource();
+                    servoCatFirmwareVersion = AsyncContext.Run(() => servoCatDevice.GetVersion(disconnectTokenSource.Token));
                     connectedState = true;
                 } else {
                     try {
@@ -262,9 +258,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public string DriverInfo {
             get {
-                Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                // TODO customise this driver description
-                string driverInfo = "Information about the driver itself. Version: " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
+                string driverInfo;
+                if (Connected) {
+                    driverInfo = $"Firmware version {servoCatFirmwareVersion}";
+                } else {
+                    driverInfo = "ServoCAT not connected";
+                }
+
                 Logger.LogMessage("DriverInfo Get", driverInfo);
                 return driverInfo;
             }
@@ -288,7 +288,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public string Name {
             get {
-                string name = "ServoCAT ASCOM Driver, by ghilios";
+                string name = "ServoCAT";
                 Logger.LogMessage("Name Get", name);
                 return name;
             }

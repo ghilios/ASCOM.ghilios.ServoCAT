@@ -29,6 +29,10 @@ namespace ASCOM.ghilios.ServoCAT.IO {
         private readonly IChannelFactory connectionFactory;
         private List<ClientInfo> registeredClients = new List<ClientInfo>();
 
+        public event EventHandler<ConnectionEventArgs> OnConnected;
+
+        public event EventHandler<ConnectionEventArgs> OnDisconnected;
+
         public DriverConnectionManager(IChannelFactory connectionFactory, [Named("Telescope")] TraceLogger logger) {
             readerWriterLock = new AsyncReaderWriterLock();
             this.logger = logger;
@@ -52,33 +56,49 @@ namespace ASCOM.ghilios.ServoCAT.IO {
         }
 
         public async Task<IChannel> Connect(Guid guid, CancellationToken ct) {
-            using (await readerWriterLock.WriterLockAsync(ct)) {
-                var client = registeredClients.SingleOrDefault(c => c.Guid == guid);
-                if (client == null) {
-                    throw new Exception($"Client {guid} is not registered");
-                }
+            var success = false;
+            try {
+                using (await readerWriterLock.WriterLockAsync(ct)) {
+                    var client = registeredClients.SingleOrDefault(c => c.Guid == guid);
+                    if (client == null) {
+                        throw new Exception($"Client {guid} is not registered");
+                    }
 
-                if (client.Connected) {
-                    logger.LogMessage("DriverConnectionManager.Connect", $"Client {guid} is already connected");
-                    return GetActiveConnection();
-                }
+                    if (client.Connected) {
+                        logger.LogMessage("DriverConnectionManager.Connect", $"Client {guid} is already connected");
+                        return GetActiveConnection();
+                    }
 
-                activeConnection = this.connectionFactory.Create();
-                await activeConnection.Open(ct);
-                client.Connected = true;
-                return activeConnection;
+                    activeConnection = this.connectionFactory.Create();
+                    await activeConnection.Open(ct);
+                    client.Connected = true;
+                    success = true;
+                    return activeConnection;
+                }
+            } finally {
+                if (success) {
+                    OnConnected?.Invoke(this, new ConnectionEventArgs() { ClientGuid = guid });
+                }
             }
         }
 
         public async Task Disconnect(Guid guid, CancellationToken ct) {
-            using (await readerWriterLock.WriterLockAsync(ct)) {
-                var client = registeredClients.SingleOrDefault(c => c.Guid == guid);
-                if (client == null) {
-                    logger.LogMessage("DriverConnectionManager.DisconnectClient", $"Client {guid} isn't registered");
-                    return;
-                }
+            var success = false;
+            try {
+                using (await readerWriterLock.WriterLockAsync(ct)) {
+                    var client = registeredClients.SingleOrDefault(c => c.Guid == guid);
+                    if (client == null) {
+                        logger.LogMessage("DriverConnectionManager.DisconnectClient", $"Client {guid} isn't registered");
+                        return;
+                    }
 
-                await DisconnectClient(client, ct);
+                    await DisconnectClient(client, ct);
+                    success = true;
+                }
+            } finally {
+                if (success) {
+                    OnDisconnected?.Invoke(this, new ConnectionEventArgs() { ClientGuid = guid });
+                }
             }
         }
 

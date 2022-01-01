@@ -27,5 +27,13 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         Guid RegisterClient();
 
         Task UnregisterClient(Guid guid);
+
+        event EventHandler<ConnectionEventArgs> OnConnected;
+
+        event EventHandler<ConnectionEventArgs> OnDisconnected;
+    }
+
+    public class ConnectionEventArgs : EventArgs {
+        public Guid ClientGuid { get; set; } = Guid.Empty;
     }
 }

@@ -43,6 +43,10 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
         public ushort Version { get; set; }
         public char SubVersion { get; set; }
+
+        public override string ToString() {
+            return $"{Version:00}.{SubVersion}";
+        }
     }
 
     [Flags]

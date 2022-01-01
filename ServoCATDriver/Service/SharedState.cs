@@ -21,7 +21,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
 
         public SharedState() {
             TelescopeDriverId = ((ProgIdAttribute)Attribute.GetCustomAttribute(typeof(Telescope.Telescope), typeof(ProgIdAttribute))).Value;
-            TelescopeDriverDescription = ((ServedClassNameAttribute)Attribute.GetCustomAttribute(typeof(Telescope.Telescope), typeof(ServedClassNameAttribute))).DisplayName;
+            TelescopeDriverDescription = "Open Source ASCOM driver for the ServoCAT GOTO/Tracking System";
         }
 
         public string TelescopeDriverId { get; private set; }

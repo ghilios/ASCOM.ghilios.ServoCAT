@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.ghilios.ServoCAT.Service.Utility;
 using ASCOM.ghilios.ServoCAT.View;
 using ASCOM.ghilios.ServoCAT.ViewModel;
@@ -18,6 +19,7 @@ using Microsoft.Win32;
 using Ninject;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -39,6 +41,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         private ArrayList classFactories = new ArrayList();
         private const string LOCAL_SERVER_APPID = "{289163c8-6579-4b32-90d2-68fb447a01df}";
         private Main mainWindow;
+        private IDriverConnectionManager driverConnectionManager;
 
         private readonly object serverLock = new object();
         private Task GCTask;
@@ -77,17 +80,20 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             Thread.CurrentThread.Name = "ghilios ServoCAT Local Server Thread";
 
             ServerLogger.LogMessage("Main", $"Creating host window");
+
+            driverConnectionManager = CompositionRoot.Kernel.Get<IDriverConnectionManager>();
+            driverConnectionManager.OnConnected += DriverConnectionManager_OnConnected;
+            driverConnectionManager.OnDisconnected += DriverConnectionManager_OnDisconnected;
+
             var mainVM = CompositionRoot.Kernel.Get<MainVM>();
 
             mainWindow = new Main();
             mainWindow.WindowStyle = WindowStyle.ToolWindow;
             mainWindow.Title = "ServoCAT";
             mainWindow.DataContext = mainVM;
-            if (startedByCOM) {
-                mainWindow.Visibility = Visibility.Hidden;
+            if (!startedByCOM) {
+                mainWindow.Show();
             }
-
-            mainWindow.Show();
 
             // Register the class factories of the served objects
             ServerLogger.LogMessage("Main", $"Registering class factories");
@@ -97,6 +103,37 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ServerLogger.LogMessage("Main", $"Starting garbage collection");
             StartGarbageCollection(TimeSpan.FromSeconds(10));
             ServerLogger.LogMessage("Main", $"Garbage collector thread started");
+        }
+
+        private object connectedClientsLock = new object();
+        private HashSet<Guid> connectedClients = new HashSet<Guid>();
+
+        private void DriverConnectionManager_OnDisconnected(object sender, ConnectionEventArgs e) {
+            int clientCount;
+            lock (connectedClientsLock) {
+                connectedClients.Remove(e.ClientGuid);
+                clientCount = connectedClients.Count;
+            }
+
+            ServerLogger.LogMessage("Main", $"{e.ClientGuid} disconnected. {clientCount} connected clients remaining");
+            if (clientCount == 0 && startedByCOM) {
+                ServerLogger.LogMessage("Main", $"Making main window hidden");
+                Dispatcher.Invoke(() => mainWindow.Hide());
+            }
+        }
+
+        private void DriverConnectionManager_OnConnected(object sender, ConnectionEventArgs e) {
+            int clientCount;
+            lock (connectedClientsLock) {
+                connectedClients.Add(e.ClientGuid);
+                clientCount = connectedClients.Count;
+            }
+
+            ServerLogger.LogMessage("Main", $"{e.ClientGuid} connected. {clientCount} connected clients");
+            if (clientCount == 1 && startedByCOM) {
+                ServerLogger.LogMessage("Main", $"Making main window visible");
+                Dispatcher.Invoke(() => mainWindow.Show());
+            }
         }
 
         protected override void OnExit(ExitEventArgs e) {
@@ -151,8 +188,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                 switch (args[0].ToLower()) {
                     case "-embedding":
                         ServerLogger.LogMessage("ProcessArguments", $"Started by COM: {args[0]}");
-                        startedByCOM = true; // Indicate COM started us and continue
-                        returnStatus = true; // Continue on return
+                        startedByCOM = true;
+                        returnStatus = true;
                         break;
 
                     case "-register":
@@ -160,8 +197,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                     case "-regserver": // Emulate VB6
                     case @"/regserver":
                         ServerLogger.LogMessage("ProcessArguments", $"Registering drivers: {args[0]}");
-                        RegisterObjects(); // Register each served object
-                        returnStatus = false; // Terminate on return
+                        RegisterObjects();
+                        returnStatus = false;
                         break;
 
                     case "-unregister":
@@ -169,8 +206,14 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                     case "-unregserver": // Emulate VB6
                     case @"/unregserver":
                         ServerLogger.LogMessage("ProcessArguments", $"Unregistering drivers: {args[0]}");
-                        UnregisterObjects(); //Unregister each served object
-                        returnStatus = false; // Terminate on return
+                        UnregisterObjects(false);
+                        returnStatus = false;
+                        break;
+
+                    case "-fullremove":
+                        ServerLogger.LogMessage("ProcessArguments", $"Fully removing drivers: {args[0]}");
+                        UnregisterObjects(true);
+                        returnStatus = false;
                         break;
 
                     default:
@@ -294,7 +337,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         /// <summary>
         /// Unregister drivers contained in this local server. (Must run as administrator.)
         /// </summary>
-        private void UnregisterObjects() {
+        private void UnregisterObjects(bool removeProfile) {
             if (!WindowsUtility.IsAdministrator()) {
                 ElevateSelf("/unregister");
                 return;
@@ -325,20 +368,16 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                 Registry.ClassesRoot.DeleteSubKey($"CLSID\\{clsId}\\Programmable", false);
                 Registry.ClassesRoot.DeleteSubKey($"CLSID\\{clsId}", false);
 
-                // Uncomment the following lines to remove ASCOM Profile information when unregistering.
-                // Unregistering often occurs during version upgrades and, if the code below is enabled, will result in loss of all device configuration during the upgrade.
-                // For this reason, enabling this capability is not recommended.
-
-                //try
-                //{
-                //    TL.LogMessage("UnregisterObjects", $"Deleting ASCOM Profile registration for {driverType.Name} ({progId})");
-                //    using (var profile = new Profile())
-                //    {
-                //        profile.DeviceType = driverType.Name;
-                //        profile.Unregister(progId);
-                //    }
-                //}
-                //catch (Exception) { }
+                // -fullremove removes the driver from the chooser, but also the saved configuration. This should be done only during a full uninstall
+                if (removeProfile) {
+                    try {
+                        ServerLogger.LogMessage("UnregisterObjects", $"Deleting ASCOM Profile registration for {driverType.Name} ({progId})");
+                        using (var profile = new Profile()) {
+                            profile.DeviceType = driverType.Name;
+                            profile.Unregister(progId);
+                        }
+                    } catch (Exception) { }
+                }
             }
         }
 
@@ -479,7 +518,6 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public int IncrementServerLockCount() {
             int newCount = Interlocked.Increment(ref serverLockCount);
             ServerLogger.LogMessage("IncrementServerLockCount", $"New server lock count: {newCount}");
-
             return newCount;
         }
 
