@@ -135,7 +135,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             var sign = coordinates.Dec.NonNegative ? "+" : "-";
             var absDec = coordinates.Dec.ToAbsolute();
-            var command = $"g{coordinates.RA.Hours:00.000} {sign}{absDec.Degrees:00.000}";
+            var command = FormattableString.Invariant($"g{coordinates.RA.Hours:00.000} {sign}{absDec.Degrees:00.000}");
             var commandBytes = new byte[command.Length + 1];
             Encoding.ASCII.GetBytes(command, 0, command.Length - 1, commandBytes, 0);
             commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, command.Length - 1);
@@ -155,7 +155,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             var sign = coordinates.Dec.NonNegative ? "+" : "-";
             var absDec = coordinates.Dec.ToAbsolute();
-            var command = $"G{coordinates.RA.Hours:00.00000} {sign}{absDec.Degrees:00.0000}";
+            var command = FormattableString.Invariant($"G{coordinates.RA.Hours:00.00000} {sign}{absDec.Degrees:00.0000}");
             var commandBytes = new byte[command.Length + 1];
             Encoding.ASCII.GetBytes(command, 0, command.Length - 1, commandBytes, 0);
             commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, command.Length - 1);

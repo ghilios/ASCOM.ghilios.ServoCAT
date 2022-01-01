@@ -17,7 +17,7 @@
     <Window.Resources>
         <ResourceDictionary>
             <DataTemplate x:Key="MainDisplayGrid">
-                <Grid Margin="0,5,0,5">
+                <Grid Margin="0,5,0,20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -34,6 +34,54 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <UniformGrid
+                        Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                        Margin="0,0,0,20">
+                        <TextBlock Text="Park" HorizontalAlignment="Right" TextAlignment="Center" Margin="5,2,5,2" MinWidth="50">
+                            <TextBlock.Style>
+                                <Style BasedOn="{StaticResource DeviceValueLabel}" TargetType="{x:Type TextBlock}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding AtPark}" Value="True">
+                                            <Setter Property="Foreground" Value="Cyan" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="Move" HorizontalAlignment="Left" TextAlignment="Center" Margin="5,2,5,2" MinWidth="50">
+                            <TextBlock.Style>
+                                <Style BasedOn="{StaticResource DeviceValueLabel}" TargetType="{x:Type TextBlock}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSlewing}" Value="True">
+                                            <Setter Property="Foreground" Value="Cyan" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="Track" HorizontalAlignment="Right" TextAlignment="Center" Margin="5,2,5,2" MinWidth="50">
+                            <TextBlock.Style>
+                                <Style BasedOn="{StaticResource DeviceValueLabel}" TargetType="{x:Type TextBlock}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Tracking}" Value="True">
+                                            <Setter Property="Foreground" Value="Cyan" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="Align" HorizontalAlignment="Left" TextAlignment="Center" Margin="5,2,5,2" MinWidth="50">
+                            <TextBlock.Style>
+                                <Style BasedOn="{StaticResource DeviceValueLabel}" TargetType="{x:Type TextBlock}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsAligned}" Value="True">
+                                            <Setter Property="Foreground" Value="Cyan" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </UniformGrid>
                     <TextBlock
                         Grid.Row="2" Grid.Column="0"
                         Margin="4,2,4,2"

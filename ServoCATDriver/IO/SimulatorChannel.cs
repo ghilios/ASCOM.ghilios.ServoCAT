@@ -114,7 +114,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
         private async Task GetCoordinatesRequest() {
             var tranformedIcrsCoordinates = GetCoordinates();
             var sign = tranformedIcrsCoordinates.Dec.NonNegative ? '+' : '-';
-            var response = $" {tranformedIcrsCoordinates.RA.Hours:00.000} {sign}{tranformedIcrsCoordinates.Dec.ToAbsolute().Degrees:00.000}\0";
+            var response = FormattableString.Invariant($" {tranformedIcrsCoordinates.RA.Hours:00.000} {sign}{tranformedIcrsCoordinates.Dec.ToAbsolute().Degrees:00.000}\0");
             await WriteResponse(response);
         }
 
@@ -139,7 +139,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 motionState |= MotionStatusEnum.ALIGN;
             }
 
-            var response = $" {tranformedIcrsCoordinates.RA.Hours:00.00000} {sign}{tranformedIcrsCoordinates.Dec.ToAbsolute().Degrees:00.0000}";
+            var response = FormattableString.Invariant($" {tranformedIcrsCoordinates.RA.Hours:00.00000} {sign}{tranformedIcrsCoordinates.Dec.ToAbsolute().Degrees:00.0000}");
             var responseBytes = new byte[20];
             Encoding.ASCII.GetBytes(response, 0, response.Length, responseBytes, 0);
             responseBytes[18] = (byte)motionState;
@@ -152,7 +152,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             await WriteResponse(responseBytes);
         }
 
-        private async Task MoveRequest(byte[] request) {
+        private Task MoveRequest(byte[] request) {
             throw new NotImplementedException();
         }
 
