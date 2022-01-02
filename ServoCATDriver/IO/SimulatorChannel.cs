@@ -12,9 +12,11 @@
 
 using ASCOM.ghilios.ServoCAT.Astrometry;
 using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Telescope;
 using ASCOM.Utilities;
 using Ninject;
 using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +24,8 @@ using System.Threading.Tasks;
 namespace ASCOM.ghilios.ServoCAT.IO {
 
     public class SimulatorChannel : IChannel {
+        private readonly ServoCatFirmwareConfig firmwareConfig;
+
         private readonly IServoCatOptions options;
         private readonly DriverAccess.Telescope simulatorTelescope;
         private readonly MemoryQueueBufferStream memoryStream;
@@ -43,6 +47,38 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             memoryStream = new MemoryQueueBufferStream();
             trackingState = Axis.NONE;
             lastMoveIsSlew = true;
+            firmwareConfig = new ServoCatFirmwareConfig(
+                azimuthConfig: new ServoCatFirmwareAxisConfig() {
+                    EncoderResolution = 2000,
+                    GearRatioValue1 = 7542,
+                    SlewRateValue1_TDPS = 55,
+                    JogRateValue1_AMPS = 140,
+                    GuideRateValue1_ASPS = 290,
+                    SlewRateValue2_TDPS = 45,
+                    JogRateValue2_AMPS = 120,
+                    GuideRateValue2_ASPS = 200,
+                    AccelDecelRateSecs = 4,
+                    BacklashValue = 2,
+                    AxisLimit = 0,
+                    TrackDirectionPositive = true
+                },
+                altitudeConfig: new ServoCatFirmwareAxisConfig() {
+                    EncoderResolution = 2000,
+                    GearRatioValue1 = 9873,
+                    SlewRateValue1_TDPS = 50,
+                    JogRateValue1_AMPS = 140,
+                    GuideRateValue1_ASPS = 290,
+                    SlewRateValue2_TDPS = 40,
+                    JogRateValue2_AMPS = 120,
+                    GuideRateValue2_ASPS = 200,
+                    AccelDecelRateSecs = 4,
+                    BacklashValue = 1120,
+                    AxisLimit = 70,
+                    TrackDirectionPositive = false
+                }) {
+                EasyTrackLatitudeValue = 17500,
+                EasyTrackSignValue = 3
+            };
         }
 
         public bool IsOpen => simulatorTelescope.Connected;
@@ -100,6 +136,8 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 await Park();
             } else if (CommandMatch(data, "p")) {
                 await Unpark();
+            } else if (CommandMatch(data, "D")) {
+                await GetFirmwareConfig();
             }
         }
 
@@ -270,6 +308,53 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             var response = $"{version.Version:00}.{version.SubVersion}\0";
             if (options.SimulatorVersion.SubVersion > 60) {
                 await WriteResponse(response);
+            }
+        }
+
+        private static void WriteFirmwareSetting(BinaryWriter bw, byte dataId, short value) {
+            bw.Write((byte)(dataId + 'A'));
+            bw.Write(value);
+            bw.Write('\r');
+        }
+
+        private async Task GetFirmwareConfig() {
+            using (var ms = new MemoryStream()) {
+                using (var bw = new BinaryWriter(ms)) {
+                    bw.Write("AZ\r".ToCharArray());
+                    WriteFirmwareSetting(bw, 0, firmwareConfig.AzimuthConfig.EncoderResolution);
+                    WriteFirmwareSetting(bw, 1, firmwareConfig.AzimuthConfig.GearRatioValue1);
+                    WriteFirmwareSetting(bw, 2, firmwareConfig.AzimuthConfig.SlewRateValue1_TDPS);
+                    WriteFirmwareSetting(bw, 3, firmwareConfig.AzimuthConfig.JogRateValue1_AMPS);
+                    WriteFirmwareSetting(bw, 4, firmwareConfig.AzimuthConfig.GuideRateValue1_ASPS);
+                    WriteFirmwareSetting(bw, 5, firmwareConfig.AzimuthConfig.SlewRateValue2_TDPS);
+                    WriteFirmwareSetting(bw, 6, firmwareConfig.AzimuthConfig.JogRateValue2_AMPS);
+                    WriteFirmwareSetting(bw, 7, firmwareConfig.AzimuthConfig.GuideRateValue2_ASPS);
+                    WriteFirmwareSetting(bw, 8, firmwareConfig.AzimuthConfig.AccelDecelRateSecs);
+                    WriteFirmwareSetting(bw, 9, firmwareConfig.AzimuthConfig.BacklashValue);
+                    WriteFirmwareSetting(bw, 10, firmwareConfig.AzimuthConfig.AxisLimit);
+                    WriteFirmwareSetting(bw, 11, firmwareConfig.AzimuthConfig.TrackDirectionPositive ? (short)1 : (short)0);
+                    WriteFirmwareSetting(bw, 12, firmwareConfig.AzimuthConfig.GoToDirectionPositive ? (short)1 : (short)0);
+                    WriteFirmwareSetting(bw, 13, firmwareConfig.EasyTrackLatitudeValue);
+
+                    bw.Write("AL\r".ToCharArray());
+                    WriteFirmwareSetting(bw, 0, firmwareConfig.AltitudeConfig.EncoderResolution);
+                    WriteFirmwareSetting(bw, 1, firmwareConfig.AltitudeConfig.GearRatioValue1);
+                    WriteFirmwareSetting(bw, 2, firmwareConfig.AltitudeConfig.SlewRateValue1_TDPS);
+                    WriteFirmwareSetting(bw, 3, firmwareConfig.AltitudeConfig.JogRateValue1_AMPS);
+                    WriteFirmwareSetting(bw, 4, firmwareConfig.AltitudeConfig.GuideRateValue1_ASPS);
+                    WriteFirmwareSetting(bw, 5, firmwareConfig.AltitudeConfig.SlewRateValue2_TDPS);
+                    WriteFirmwareSetting(bw, 6, firmwareConfig.AltitudeConfig.JogRateValue2_AMPS);
+                    WriteFirmwareSetting(bw, 7, firmwareConfig.AltitudeConfig.GuideRateValue2_ASPS);
+                    WriteFirmwareSetting(bw, 8, firmwareConfig.AltitudeConfig.AccelDecelRateSecs);
+                    WriteFirmwareSetting(bw, 9, firmwareConfig.AltitudeConfig.BacklashValue);
+                    WriteFirmwareSetting(bw, 10, firmwareConfig.AltitudeConfig.AxisLimit);
+                    WriteFirmwareSetting(bw, 11, firmwareConfig.AltitudeConfig.TrackDirectionPositive ? (short)1 : (short)0);
+                    WriteFirmwareSetting(bw, 12, firmwareConfig.AltitudeConfig.GoToDirectionPositive ? (short)1 : (short)0);
+                    WriteFirmwareSetting(bw, 13, firmwareConfig.EasyTrackSignValue);
+                }
+
+                var responseBytes = ms.ToArray();
+                await WriteResponse(responseBytes);
             }
         }
 

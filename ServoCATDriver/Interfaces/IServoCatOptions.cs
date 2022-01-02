@@ -13,6 +13,7 @@
 using System;
 using System.ComponentModel;
 using ASCOM.ghilios.ServoCAT.Converters;
+using ASCOM.ghilios.ServoCAT.Telescope;
 
 namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
@@ -43,5 +44,7 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         TimeSpan TelescopeStatusCacheTTL { get; }
         TimeSpan DeviceRequestTimeout { get; }
         TimeSpan SlewTimeout { get; }
+        bool FirmwareConfigLoaded { get; set; }
+        ServoCatFirmwareConfig FirmwareConfig { get; }
     }
 }

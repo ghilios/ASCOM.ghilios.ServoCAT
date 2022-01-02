@@ -15,6 +15,7 @@ using ASCOM.ghilios.ServoCAT.Exceptions;
 using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.Utilities;
 using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +24,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
     public class ServoCatDevice : IServoCatDevice {
         private readonly IChannel channel;
+        private readonly TraceLogger logger;
         private readonly IServoCatOptions options;
         private readonly AstrometryConverter astrometryConverter;
         private bool initialized = false;
@@ -36,6 +38,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             this.channel = channel;
             this.options = options;
             this.astrometryConverter = astrometryConverter;
+            this.logger = logger;
         }
 
         public async Task Initialize(CancellationToken ct) {
@@ -45,6 +48,12 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             initialized = true;
             firmwareVersion = await GetVersion(ct);
+            if (!options.FirmwareConfigLoaded) {
+                logger.LogMessage("ServoCatDevice", "Firmware config not previously loaded, so querying the device for it");
+                options.FirmwareConfig.CopyFrom(await GetConfig(ct));
+                options.FirmwareConfigLoaded = true;
+                options.Save();
+            }
         }
 
         private void EnsureChannelOpen() {
@@ -250,6 +259,81 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             } else {
                 await SendCommandNoResponse(commandBytes, ct);
                 return true;
+            }
+        }
+
+        private static void GetFirmwareConfigSetting(BinaryReader br, byte expectedDataIndex, Action<short> setter) {
+            var dataId = br.ReadByte();
+            var expectedDataId = (byte)(expectedDataIndex + 'A');
+            if (dataId != expectedDataId) {
+                throw new InvalidDataException($"Received unexpected data id {dataId}");
+            }
+
+            var value = br.ReadInt16();
+            var cr = br.ReadByte();
+            if (cr != '\r') {
+                throw new InvalidDataException($"Expected carriage return. Got {cr} instead");
+            }
+
+            setter(value);
+        }
+
+        public async Task<ServoCatFirmwareConfig> GetConfig(CancellationToken ct) {
+            EnsureChannelOpen();
+            channel.FlushReadExisting();
+
+            var response = await SendCommandFixedResponse("D", 118, ct);
+            using (var ms = new MemoryStream(response, false)) {
+                using (var br = new BinaryReader(ms)) {
+                    var config = new ServoCatFirmwareConfig();
+                    var altitudeSectionReceived = false;
+                    var azimuthSectionReceived = false;
+                    for (int i = 0; i < 2; ++i) {
+                        var configSection = new string(br.ReadChars(2));
+                        var configSectionCr = br.ReadChar();
+                        if (configSectionCr != '\r') {
+                            throw new InvalidDataException($"Expected carriage return after axis name. Got {configSectionCr} instead");
+                        }
+
+                        ServoCatFirmwareAxisConfig axisConfig;
+                        if (configSection == "AL") {
+                            axisConfig = config.AltitudeConfig;
+                            altitudeSectionReceived = true;
+                        } else if (configSection == "AZ") {
+                            axisConfig = config.AzimuthConfig;
+                            azimuthSectionReceived = true;
+                        } else {
+                            throw new InvalidDataException($"Received unexpected data section {configSection}");
+                        }
+
+                        GetFirmwareConfigSetting(br, 0, (v) => axisConfig.EncoderResolution = v);
+                        GetFirmwareConfigSetting(br, 1, (v) => axisConfig.GearRatioValue1 = v);
+                        GetFirmwareConfigSetting(br, 2, (v) => axisConfig.SlewRateValue1_TDPS = v);
+                        GetFirmwareConfigSetting(br, 3, (v) => axisConfig.JogRateValue1_AMPS = v);
+                        GetFirmwareConfigSetting(br, 4, (v) => axisConfig.GuideRateValue1_ASPS = v);
+                        GetFirmwareConfigSetting(br, 5, (v) => axisConfig.SlewRateValue2_TDPS = v);
+                        GetFirmwareConfigSetting(br, 6, (v) => axisConfig.JogRateValue2_AMPS = v);
+                        GetFirmwareConfigSetting(br, 7, (v) => axisConfig.GuideRateValue2_ASPS = v);
+                        GetFirmwareConfigSetting(br, 8, (v) => axisConfig.AccelDecelRateSecs = v);
+                        GetFirmwareConfigSetting(br, 9, (v) => axisConfig.BacklashValue = v);
+                        GetFirmwareConfigSetting(br, 10, (v) => axisConfig.AxisLimit = v);
+                        GetFirmwareConfigSetting(br, 11, (v) => axisConfig.TrackDirectionPositive = v > 0);
+                        GetFirmwareConfigSetting(br, 12, (v) => axisConfig.GoToDirectionPositive = v > 0);
+                        if (configSection == "AL") {
+                            GetFirmwareConfigSetting(br, 13, (v) => config.EasyTrackSignValue = v);
+                        } else {
+                            GetFirmwareConfigSetting(br, 13, (v) => config.EasyTrackLatitudeValue = v);
+                        }
+                    }
+                    if (!altitudeSectionReceived) {
+                        throw new InvalidDataException($"Did not receive AL section");
+                    }
+                    if (!azimuthSectionReceived) {
+                        throw new InvalidDataException($"Did not receive AZ section");
+                    }
+
+                    return config;
+                }
             }
         }
 

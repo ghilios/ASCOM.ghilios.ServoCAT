@@ -71,5 +71,16 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
         public static void WriteInt32(this IProfile profile, string driverId, string name, string subkey, int value) {
             profile.WriteValue(driverId, name, value.ToString(CultureInfo.InvariantCulture), subkey);
         }
+
+        public static short GetInt16(this IProfile profile, string driverId, string name, string subkey, short defaultvalue) {
+            if (short.TryParse(profile.GetValue(driverId, name, subkey, ""), NumberStyles.Float, CultureInfo.InvariantCulture, out var result)) {
+                return result;
+            }
+            return defaultvalue;
+        }
+
+        public static void WriteInt16(this IProfile profile, string driverId, string name, string subkey, short value) {
+            profile.WriteValue(driverId, name, value.ToString(CultureInfo.InvariantCulture), subkey);
+        }
     }
 }

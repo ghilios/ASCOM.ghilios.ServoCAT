@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Telescope;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -95,5 +96,7 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         Task<bool> Unpark(CancellationToken ct);
 
         Task<bool> Move(Direction direction, SlewRate rate, CancellationToken ct);
+
+        Task<ServoCatFirmwareConfig> GetConfig(CancellationToken ct);
     }
 }

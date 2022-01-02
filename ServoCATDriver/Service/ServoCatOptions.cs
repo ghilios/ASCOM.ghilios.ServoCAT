@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Telescope;
 using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.Utilities.Interfaces;
 using Ninject;
@@ -24,7 +25,9 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         private readonly IProfile ascomProfile;
         private readonly ISharedState sharedState;
         private readonly string driverId;
-        private const string profileSubKey = "astrometry_settings";
+        private const string astrometrySettingKey = "astrometry_settings";
+        private const string connectionSettingsKey = "connection_settings";
+        private const string firmwareSettingsKey = "firmware_settings";
 
         public ServoCatOptions([Named("Telescope")] IProfile ascomProfile, ISharedState sharedState) {
             this.ascomProfile = ascomProfile;
@@ -33,32 +36,83 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         }
 
         public void Load() {
-            Longitude = ascomProfile.GetDouble(driverId, "longitude", profileSubKey, 0.0d);
-            Latitude = ascomProfile.GetDouble(driverId, "latitude", profileSubKey, 0.0d);
-            Elevation = ascomProfile.GetDouble(driverId, "elevation", profileSubKey, 0.0d);
-            SerialPort = ascomProfile.GetString(driverId, "serialPort", profileSubKey, null);
-            UseJ2000 = ascomProfile.GetBool(driverId, "useJ2000", profileSubKey, false);
-            ConnectionType = ascomProfile.GetEnum(driverId, "connectionType", profileSubKey, ConnectionType.Simulator);
-            var simulatorFirmwareVersion = ascomProfile.GetInt32(driverId, "simulatorFirmwareVersion", profileSubKey, 61);
-            var simulatorFirmwareSubVersion = ascomProfile.GetString(driverId, "simulatorFirmwareSubVersion", profileSubKey, "C");
+            Longitude = ascomProfile.GetDouble(driverId, "longitude", astrometrySettingKey, 0.0d);
+            Latitude = ascomProfile.GetDouble(driverId, "latitude", astrometrySettingKey, 0.0d);
+            Elevation = ascomProfile.GetDouble(driverId, "elevation", astrometrySettingKey, 0.0d);
+            SerialPort = ascomProfile.GetString(driverId, "serialPort", connectionSettingsKey, null);
+            UseJ2000 = ascomProfile.GetBool(driverId, "useJ2000", astrometrySettingKey, false);
+            ConnectionType = ascomProfile.GetEnum(driverId, "connectionType", connectionSettingsKey, ConnectionType.Simulator);
+            var simulatorFirmwareVersion = ascomProfile.GetInt32(driverId, "simulatorFirmwareVersion", connectionSettingsKey, 61);
+            var simulatorFirmwareSubVersion = ascomProfile.GetString(driverId, "simulatorFirmwareSubVersion", connectionSettingsKey, "C");
             if (simulatorFirmwareVersion < 61 || simulatorFirmwareVersion >= 100 || simulatorFirmwareSubVersion.Length != 1) {
                 SimulatorVersion = FirmwareVersion.GetDefault();
             } else {
                 SimulatorVersion = new FirmwareVersion() { Version = (ushort)simulatorFirmwareVersion, SubVersion = simulatorFirmwareSubVersion[0] };
             }
-            SimulatorAligned = ascomProfile.GetBool(driverId, "simulatorAligned", profileSubKey, true);
+            SimulatorAligned = ascomProfile.GetBool(driverId, "simulatorAligned", connectionSettingsKey, true);
+            FirmwareConfigLoaded = ascomProfile.GetBool(driverId, "firmwareConfigLoaded", connectionSettingsKey, false);
+            LoadFirmwareConfig();
         }
 
         public void Save() {
-            ascomProfile.WriteDouble(driverId, "longitude", profileSubKey, Longitude);
-            ascomProfile.WriteDouble(driverId, "latitude", profileSubKey, Latitude);
-            ascomProfile.WriteDouble(driverId, "elevation", profileSubKey, Elevation);
-            ascomProfile.WriteString(driverId, "serialPort", profileSubKey, SerialPort);
-            ascomProfile.WriteBool(driverId, "useJ2000", profileSubKey, UseJ2000);
-            ascomProfile.WriteEnum(driverId, "connectionType", profileSubKey, ConnectionType);
-            ascomProfile.WriteInt32(driverId, "simulatorFirmwareVersion", profileSubKey, SimulatorVersion.Version);
-            ascomProfile.WriteString(driverId, "simulatorFirmwareSubVersion", profileSubKey, $"{SimulatorVersion.SubVersion}");
-            ascomProfile.WriteBool(driverId, "simulatorAligned", profileSubKey, SimulatorAligned);
+            ascomProfile.WriteDouble(driverId, "longitude", astrometrySettingKey, Longitude);
+            ascomProfile.WriteDouble(driverId, "latitude", astrometrySettingKey, Latitude);
+            ascomProfile.WriteDouble(driverId, "elevation", astrometrySettingKey, Elevation);
+            ascomProfile.WriteString(driverId, "serialPort", connectionSettingsKey, SerialPort);
+            ascomProfile.WriteBool(driverId, "useJ2000", astrometrySettingKey, UseJ2000);
+            ascomProfile.WriteEnum(driverId, "connectionType", connectionSettingsKey, ConnectionType);
+            ascomProfile.WriteInt32(driverId, "simulatorFirmwareVersion", connectionSettingsKey, SimulatorVersion.Version);
+            ascomProfile.WriteString(driverId, "simulatorFirmwareSubVersion", connectionSettingsKey, $"{SimulatorVersion.SubVersion}");
+            ascomProfile.WriteBool(driverId, "simulatorAligned", connectionSettingsKey, SimulatorAligned);
+            ascomProfile.WriteBool(driverId, "firmwareConfigLoaded", connectionSettingsKey, FirmwareConfigLoaded);
+            SaveFirmwareConfig();
+        }
+
+        private void SaveFirmwareAxisConfig(string axisName, ServoCatFirmwareAxisConfig axisConfig) {
+            var profileSubKey = $"{firmwareSettingsKey}_{axisName}";
+            ascomProfile.WriteInt16(driverId, "encoderResolution", profileSubKey, axisConfig.EncoderResolution);
+            ascomProfile.WriteInt16(driverId, "gearRatioValue1", profileSubKey, axisConfig.GearRatioValue1);
+            ascomProfile.WriteInt16(driverId, "slewRateValue1_TDPS", profileSubKey, axisConfig.SlewRateValue1_TDPS);
+            ascomProfile.WriteInt16(driverId, "jogRateValue1_AMPS", profileSubKey, axisConfig.JogRateValue1_AMPS);
+            ascomProfile.WriteInt16(driverId, "guideRateValue1_ASPS", profileSubKey, axisConfig.GuideRateValue1_ASPS);
+            ascomProfile.WriteInt16(driverId, "slewRateValue2_TDPS", profileSubKey, axisConfig.SlewRateValue2_TDPS);
+            ascomProfile.WriteInt16(driverId, "jogRateValue2_AMPS", profileSubKey, axisConfig.JogRateValue2_AMPS);
+            ascomProfile.WriteInt16(driverId, "guideRateValue2_ASPS", profileSubKey, axisConfig.GuideRateValue2_ASPS);
+            ascomProfile.WriteInt16(driverId, "accelDecelRateSecs", profileSubKey, axisConfig.AccelDecelRateSecs);
+            ascomProfile.WriteInt16(driverId, "backlashValue", profileSubKey, axisConfig.BacklashValue);
+            ascomProfile.WriteInt16(driverId, "axisLimit", profileSubKey, axisConfig.AxisLimit);
+            ascomProfile.WriteBool(driverId, "trackDirectionPositive", profileSubKey, axisConfig.TrackDirectionPositive);
+            ascomProfile.WriteBool(driverId, "goToDirectionPositive", profileSubKey, axisConfig.GoToDirectionPositive);
+        }
+
+        private void LoadFirmwareAxisConfig(string axisName, ServoCatFirmwareAxisConfig axisConfig) {
+            var profileSubKey = $"{firmwareSettingsKey}_{axisName}";
+            axisConfig.EncoderResolution = ascomProfile.GetInt16(driverId, "encoderResolution", firmwareSettingsKey, short.MaxValue);
+            axisConfig.GearRatioValue1 = ascomProfile.GetInt16(driverId, "gearRatioValue1", firmwareSettingsKey, short.MaxValue);
+            axisConfig.SlewRateValue1_TDPS = ascomProfile.GetInt16(driverId, "slewRateValue1_TDPS", firmwareSettingsKey, short.MaxValue);
+            axisConfig.JogRateValue1_AMPS = ascomProfile.GetInt16(driverId, "jogRateValue1_AMPS", firmwareSettingsKey, short.MaxValue);
+            axisConfig.SlewRateValue2_TDPS = ascomProfile.GetInt16(driverId, "slewRateValue2_TDPS", firmwareSettingsKey, short.MaxValue);
+            axisConfig.JogRateValue2_AMPS = ascomProfile.GetInt16(driverId, "jogRateValue2_AMPS", firmwareSettingsKey, short.MaxValue);
+            axisConfig.GuideRateValue2_ASPS = ascomProfile.GetInt16(driverId, "guideRateValue2_ASPS", firmwareSettingsKey, short.MaxValue);
+            axisConfig.AccelDecelRateSecs = ascomProfile.GetInt16(driverId, "accelDecelRateSecs", firmwareSettingsKey, short.MaxValue);
+            axisConfig.BacklashValue = ascomProfile.GetInt16(driverId, "backlashValue", firmwareSettingsKey, short.MaxValue);
+            axisConfig.AxisLimit = ascomProfile.GetInt16(driverId, "axisLimit", firmwareSettingsKey, short.MaxValue);
+            axisConfig.TrackDirectionPositive = ascomProfile.GetBool(driverId, "trackDirectionPositive", firmwareSettingsKey, true);
+            axisConfig.GoToDirectionPositive = ascomProfile.GetBool(driverId, "goToDirectionPositive", firmwareSettingsKey, true);
+        }
+
+        private void SaveFirmwareConfig() {
+            SaveFirmwareAxisConfig("altitude", FirmwareConfig.AltitudeConfig);
+            SaveFirmwareAxisConfig("azimuth", FirmwareConfig.AzimuthConfig);
+            ascomProfile.WriteInt16(driverId, "easyTrackLatitudeValue", firmwareSettingsKey, FirmwareConfig.EasyTrackLatitudeValue);
+            ascomProfile.WriteInt16(driverId, "easyTrackSignValue", firmwareSettingsKey, FirmwareConfig.EasyTrackSignValue);
+        }
+
+        private void LoadFirmwareConfig() {
+            LoadFirmwareAxisConfig("altitude", FirmwareConfig.AltitudeConfig);
+            LoadFirmwareAxisConfig("azimuth", FirmwareConfig.AzimuthConfig);
+            FirmwareConfig.EasyTrackLatitudeValue = ascomProfile.GetInt16(driverId, "easyTrackLatitudeValue", firmwareSettingsKey, 0);
+            FirmwareConfig.EasyTrackSignValue = ascomProfile.GetInt16(driverId, "easyTrackSignValue", firmwareSettingsKey, 0);
         }
 
         public void CopyFrom(IServoCatOptions servoCatOptions) {
@@ -70,6 +124,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             this.ConnectionType = servoCatOptions.ConnectionType;
             this.SimulatorVersion = servoCatOptions.SimulatorVersion;
             this.SimulatorAligned = servoCatOptions.SimulatorAligned;
+            this.FirmwareConfigLoaded = servoCatOptions.FirmwareConfigLoaded;
+            this.FirmwareConfig.CopyFrom(servoCatOptions.FirmwareConfig);
         }
 
         public IServoCatOptions Clone() {
@@ -93,5 +149,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public TimeSpan TelescopeStatusCacheTTL => TimeSpan.FromMilliseconds(500);
         public TimeSpan DeviceRequestTimeout => TimeSpan.FromSeconds(3);
         public TimeSpan SlewTimeout => TimeSpan.FromMinutes(1);
+        public bool FirmwareConfigLoaded { get; set; }
+        public ServoCatFirmwareConfig FirmwareConfig { get; } = new ServoCatFirmwareConfig();
     }
 }
