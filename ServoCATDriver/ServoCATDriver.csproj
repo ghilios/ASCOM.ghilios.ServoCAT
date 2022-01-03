@@ -212,7 +212,6 @@
     <Compile Include="Interfaces\IMicroCache.cs" />
     <Compile Include="Interfaces\ISerialUtilities.cs" />
     <Compile Include="Interfaces\IServoCatDevice.cs" />
-    <Compile Include="Interfaces\IServoCatDeviceFactory.cs" />
     <Compile Include="Interfaces\ISharedState.cs" />
     <Compile Include="IO\ChannelFactory.cs" />
     <Compile Include="IO\ClientInfo.cs" />
@@ -234,7 +233,6 @@
     <Compile Include="Service\Utility\ClassFactory.cs" />
     <Compile Include="Service\Utility\WindowsUtility.cs" />
     <Compile Include="Telescope\ServoCatDevice.cs" />
-    <Compile Include="Telescope\ServoCatDeviceFactory.cs" />
     <Compile Include="Telescope\ServoCatFirmwareConfig.cs" />
     <Compile Include="Telescope\TelescopeDriver.cs" />
     <Compile Include="Telescope\Rates.cs" />

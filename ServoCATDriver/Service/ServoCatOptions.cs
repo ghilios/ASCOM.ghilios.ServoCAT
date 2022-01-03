@@ -87,18 +87,18 @@ namespace ASCOM.ghilios.ServoCAT.Service {
 
         private void LoadFirmwareAxisConfig(string axisName, ServoCatFirmwareAxisConfig axisConfig) {
             var profileSubKey = $"{firmwareSettingsKey}_{axisName}";
-            axisConfig.EncoderResolution = ascomProfile.GetInt16(driverId, "encoderResolution", firmwareSettingsKey, short.MaxValue);
-            axisConfig.GearRatioValue1 = ascomProfile.GetInt16(driverId, "gearRatioValue1", firmwareSettingsKey, short.MaxValue);
-            axisConfig.SlewRateValue1_TDPS = ascomProfile.GetInt16(driverId, "slewRateValue1_TDPS", firmwareSettingsKey, short.MaxValue);
-            axisConfig.JogRateValue1_AMPS = ascomProfile.GetInt16(driverId, "jogRateValue1_AMPS", firmwareSettingsKey, short.MaxValue);
-            axisConfig.SlewRateValue2_TDPS = ascomProfile.GetInt16(driverId, "slewRateValue2_TDPS", firmwareSettingsKey, short.MaxValue);
-            axisConfig.JogRateValue2_AMPS = ascomProfile.GetInt16(driverId, "jogRateValue2_AMPS", firmwareSettingsKey, short.MaxValue);
-            axisConfig.GuideRateValue2_ASPS = ascomProfile.GetInt16(driverId, "guideRateValue2_ASPS", firmwareSettingsKey, short.MaxValue);
-            axisConfig.AccelDecelRateSecs = ascomProfile.GetInt16(driverId, "accelDecelRateSecs", firmwareSettingsKey, short.MaxValue);
-            axisConfig.BacklashValue = ascomProfile.GetInt16(driverId, "backlashValue", firmwareSettingsKey, short.MaxValue);
-            axisConfig.AxisLimit = ascomProfile.GetInt16(driverId, "axisLimit", firmwareSettingsKey, short.MaxValue);
-            axisConfig.TrackDirectionPositive = ascomProfile.GetBool(driverId, "trackDirectionPositive", firmwareSettingsKey, true);
-            axisConfig.GoToDirectionPositive = ascomProfile.GetBool(driverId, "goToDirectionPositive", firmwareSettingsKey, true);
+            axisConfig.EncoderResolution = ascomProfile.GetInt16(driverId, "encoderResolution", profileSubKey, short.MaxValue);
+            axisConfig.GearRatioValue1 = ascomProfile.GetInt16(driverId, "gearRatioValue1", profileSubKey, short.MaxValue);
+            axisConfig.SlewRateValue1_TDPS = ascomProfile.GetInt16(driverId, "slewRateValue1_TDPS", profileSubKey, short.MaxValue);
+            axisConfig.JogRateValue1_AMPS = ascomProfile.GetInt16(driverId, "jogRateValue1_AMPS", profileSubKey, short.MaxValue);
+            axisConfig.SlewRateValue2_TDPS = ascomProfile.GetInt16(driverId, "slewRateValue2_TDPS", profileSubKey, short.MaxValue);
+            axisConfig.JogRateValue2_AMPS = ascomProfile.GetInt16(driverId, "jogRateValue2_AMPS", profileSubKey, short.MaxValue);
+            axisConfig.GuideRateValue2_ASPS = ascomProfile.GetInt16(driverId, "guideRateValue2_ASPS", profileSubKey, short.MaxValue);
+            axisConfig.AccelDecelRateSecs = ascomProfile.GetInt16(driverId, "accelDecelRateSecs", profileSubKey, short.MaxValue);
+            axisConfig.BacklashValue = ascomProfile.GetInt16(driverId, "backlashValue", profileSubKey, short.MaxValue);
+            axisConfig.AxisLimit = ascomProfile.GetInt16(driverId, "axisLimit", profileSubKey, short.MaxValue);
+            axisConfig.TrackDirectionPositive = ascomProfile.GetBool(driverId, "trackDirectionPositive", profileSubKey, true);
+            axisConfig.GoToDirectionPositive = ascomProfile.GetBool(driverId, "goToDirectionPositive", profileSubKey, true);
         }
 
         private void SaveFirmwareConfig() {

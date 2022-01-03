@@ -74,8 +74,11 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
     }
 
     public interface IServoCatDevice {
+        bool IsConnected { get; }
 
-        Task Initialize(CancellationToken ct);
+        Task Close(CancellationToken ct);
+
+        Task Open(IChannel channel, CancellationToken ct);
 
         Task<ICRSCoordinates> GetCoordinates(CancellationToken ct);
 

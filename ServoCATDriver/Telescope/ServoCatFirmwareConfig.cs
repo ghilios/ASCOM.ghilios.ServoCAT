@@ -143,17 +143,17 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             set {
                 backlashValue = value;
                 RaisePropertyChanged();
-                RaisePropertyChanged(nameof(BacklashArcSeconds));
+                RaisePropertyChanged(nameof(Backlash));
             }
         }
 
-        public int BacklashArcSeconds {
+        public Angle Backlash {
             get {
                 // >= 1000 represents arcsecs, otherwise arcmins
                 if (BacklashValue >= 1000) {
-                    return BacklashValue - 1000;
+                    return Angle.ByDegree((BacklashValue - 1000) / 3600.0d);
                 }
-                return BacklashValue * 60;
+                return Angle.ByDegree(BacklashValue / 60.0d);
             }
         }
 

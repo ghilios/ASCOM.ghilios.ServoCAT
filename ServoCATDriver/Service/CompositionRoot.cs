@@ -50,8 +50,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             Bind<ISerialUtilities>().To<SerialUtilities>().InSingletonScope();
             Bind<IDriverConnectionManager>().To<DriverConnectionManager>().InSingletonScope();
             Bind<IServoCatOptions>().To<ServoCatOptions>().InSingletonScope().OnActivation(x => x.Load());
-            Bind<IServoCatDeviceFactory>().To<ServoCatDeviceFactory>().InSingletonScope();
             Bind<IChannelFactory>().To<ChannelFactory>().InSingletonScope();
+            Bind<IServoCatDevice>().To<ServoCatDevice>().InSingletonScope();
             Bind<ISharedState>().To<SharedState>().InSingletonScope();
             Bind<IMicroCacheFactory>().To<MicroCacheFactory>().InSingletonScope();
             Bind<IProfile>().ToMethod(CreateTelescopeProfile).InSingletonScope().Named("Telescope");

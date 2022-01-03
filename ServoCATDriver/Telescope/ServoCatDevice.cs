@@ -13,7 +13,10 @@
 using ASCOM.ghilios.ServoCAT.Astrometry;
 using ASCOM.ghilios.ServoCAT.Exceptions;
 using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.Utilities;
+using Ninject;
+using Nito.AsyncEx;
 using System;
 using System.IO;
 using System.Text;
@@ -22,8 +25,8 @@ using System.Threading.Tasks;
 
 namespace ASCOM.ghilios.ServoCAT.Telescope {
 
-    public class ServoCatDevice : IServoCatDevice {
-        private readonly IChannel channel;
+    public class ServoCatDevice : BaseINPC, IServoCatDevice, IDisposable {
+        private IChannel channel;
         private readonly TraceLogger logger;
         private readonly IServoCatOptions options;
         private readonly AstrometryConverter astrometryConverter;
@@ -32,31 +35,53 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         private FirmwareVersion firmwareVersion;
 
         public ServoCatDevice(
-            IChannel channel,
             IServoCatOptions options,
             AstrometryConverter astrometryConverter,
             ISharedState sharedState,
-            TraceLogger logger) {
-            this.channel = channel;
+            [Named("Telescope")] TraceLogger logger) {
             this.options = options;
             this.astrometryConverter = astrometryConverter;
             this.sharedState = sharedState;
             this.logger = logger;
         }
 
-        public async Task Initialize(CancellationToken ct) {
+        public bool IsConnected {
+            get {
+                return initialized && channel?.IsOpen == true;
+            }
+        }
+
+        public async Task Open(IChannel channel, CancellationToken ct) {
+            if (initialized && !ReferenceEquals(channel, this.channel)) {
+                logger.LogMessage("ServoCatDevice.Open", "Device is already open when Open is called with a difference channel. Closing existing connection and opening new one");
+                await Close(ct);
+            }
+
+            this.channel = channel;
             if (!channel.IsOpen) {
                 await channel.Open(ct);
             }
 
-            initialized = true;
-            firmwareVersion = await GetVersion(ct);
-            if (!options.FirmwareConfigLoaded) {
-                logger.LogMessage("ServoCatDevice", "Firmware config not previously loaded, so querying the device for it");
-                options.FirmwareConfig.CopyFrom(await GetConfig(ct));
-                options.FirmwareConfigLoaded = true;
-                options.Save();
+            if (!initialized) {
+                initialized = true;
+                firmwareVersion = await GetVersion(ct);
+                if (!options.FirmwareConfigLoaded) {
+                    logger.LogMessage("ServoCatDevice", "Firmware config not previously loaded, so querying the device for it");
+                    options.FirmwareConfig.CopyFrom(await GetConfig(ct));
+                    options.FirmwareConfigLoaded = true;
+                    options.Save();
+                }
             }
+
+            RaisePropertyChanged(nameof(IsConnected));
+        }
+
+        public async Task Close(CancellationToken ct) {
+            initialized = false;
+            if (channel.IsOpen) {
+                await channel.Close(ct);
+            }
+            RaisePropertyChanged(nameof(IsConnected));
         }
 
         private void EnsureChannelOpen() {
@@ -408,6 +433,12 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 result = (byte)(result ^ response[i]);
             }
             return result;
+        }
+
+        public void Dispose() {
+            if (initialized) {
+                AsyncContext.Run(() => Close(CancellationToken.None));
+            }
         }
     }
 }

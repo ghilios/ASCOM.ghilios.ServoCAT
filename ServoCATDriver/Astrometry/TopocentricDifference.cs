@@ -33,7 +33,7 @@ namespace ASCOM.ghilios.ServoCAT.Astrometry {
             var cartesian = tc.ToUnitCartesian();
             var rotationToUse = negate ? rotation.Negate() : rotation;
             var rotatedQuaternion = rotationToUse * new Quaternion(0, cartesian.X, cartesian.Y, cartesian.Z) * rotationToUse.Conjugate();
-            var rotatedCartesian = new Vector3D(rotatedQuaternion.ImagX, rotatedQuaternion.ImagY, rotatedQuaternion.ImagZ);
+            var rotatedCartesian = new Vector3D(rotatedQuaternion.ImagX, rotatedQuaternion.ImagY, rotatedQuaternion.ImagZ).Normalize().ToVector3D();
             return TopocentricCoordinates.FromUnitCartesian(
                 coords: rotatedCartesian,
                 latitude: tc.Latitude,

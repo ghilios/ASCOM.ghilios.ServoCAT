@@ -16,5 +16,7 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     public interface IMainVM : INotifyPropertyChanged {
         IServoCatOptions ServoCatOptions { get; }
+
+        void Stop();
     }
 }

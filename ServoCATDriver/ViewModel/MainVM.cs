@@ -15,6 +15,7 @@ using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.Utilities;
 using Ninject;
+using Nito.AsyncEx;
 using PostSharp.Patterns.Model;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,6 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
         private readonly TraceLogger Logger;
         private readonly ISerialUtilities serialUtilities;
         private readonly IDriverConnectionManager driverConnectionManager;
-        private readonly IServoCatDeviceFactory deviceFactory;
         private readonly AstrometryConverter astrometryConverter;
         private readonly Guid deviceClientId;
         private IServoCatDevice device;
@@ -41,7 +41,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
 
         public MainVM(
             IServoCatOptions servoCatOptions,
-            IServoCatDeviceFactory deviceFactory,
+            IServoCatDevice device,
             IDriverConnectionManager driverConnectionManager,
             ISharedState sharedState,
             AstrometryConverter astrometryConverter,
@@ -53,7 +53,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             this.ToggleConnectCommand = new RelayCommand(ToggleConnect);
             this.ToggleParkCommand = new RelayCommand(TogglePark);
             this.serialUtilities = serialUtilities;
-            this.deviceFactory = deviceFactory;
+            this.device = device;
             this.driverConnectionManager = driverConnectionManager;
             this.driverConnectionManager.OnConnected += DriverConnectionManager_OnConnected;
             this.driverConnectionManager.OnDisconnected += DriverConnectionManager_OnDisconnected;
@@ -63,6 +63,11 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             deviceClientId = driverConnectionManager.RegisterClient();
             Logger.LogMessage("MainVM", $"Device Client Id - {deviceClientId}");
             ResetProperties();
+        }
+
+        public void Stop() {
+            StopPolling();
+            ConnectedDirectly = false;
         }
 
         private void DriverConnectionManager_OnDisconnected(object sender, ConnectionEventArgs e) {
@@ -81,7 +86,13 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             Logger.LogMessage("MainVM", $"OnDisconnected - {clientGuid}, {connectionCount} connections remaining");
             if (connectionCount == 1 && !ConnectedDirectly) {
                 // Last disconnection, so stop polling
-                StopPolling();
+                try {
+                    StopPolling();
+                    AsyncContext.Run(() => device.Close(CancellationToken.None));
+                } catch (Exception ex) {
+                    Logger.LogMessageCrLf("MainVM.DriverConnectionManager_OnDisconnected", $"Failure during device close. {ex}");
+                    // Suppress and move on
+                }
             }
         }
 
@@ -107,7 +118,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
 
         private void OpenSetupDialog(object o) {
             try {
-                SetupVM.Show(ServoCatOptions, serialUtilities);
+                SetupVM.Show(SharedState, device, ServoCatOptions, serialUtilities, Logger);
             } catch (Exception ex) {
                 Logger.LogMessageCrLf("MainVM.OpenSetupDialog", $"Exception: {ex}");
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -128,8 +139,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
 
         private void ToggleConnect(object o) {
             if (ConnectedDirectly) {
-                StopPolling();
-                ConnectedDirectly = false;
+                Stop();
                 return;
             } else {
                 ConnectAndStartPolling();
@@ -158,8 +168,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
         private async Task ConnectAndPoll(CancellationToken ct) {
             try {
                 var channel = await driverConnectionManager.Connect(deviceClientId, ct);
-                device = deviceFactory.Create(channel);
-                await device.Initialize(ct);
+                await device.Open(channel, ct);
             } catch (Exception e) {
                 Logger.LogMessageCrLf("MainVM.ConnectAndPoll", $"Failed to connected - {e}");
                 if (!SharedState.StartedByCOM) {

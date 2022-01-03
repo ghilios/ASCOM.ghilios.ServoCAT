@@ -139,6 +139,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         }
 
         protected override void OnExit(ExitEventArgs e) {
+            mainVM.Stop();
+
             try {
                 ServerLogger.LogMessage("Main", "Revoking class factories");
                 RevokeClassFactories();
@@ -167,9 +169,10 @@ namespace ASCOM.ghilios.ServoCAT.Service {
 
         private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
             ServerLogger.LogMessage("Main", $"ghilios ServoCAT Server exited with an unhandled exception: {e.Exception.GetType()}, {e.Exception.Message}");
+            MessageBox.Show($"Unhandled exception {e.Exception.Message}", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
             e.Handled = true;
-            Current.Shutdown();
+            Current?.Shutdown();
         }
 
         public static LocalServerApp App => (LocalServerApp)Current;

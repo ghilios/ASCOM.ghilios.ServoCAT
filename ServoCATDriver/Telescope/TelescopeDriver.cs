@@ -46,7 +46,6 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         private readonly IAstroUtils astroUtilities;
         private readonly TraceLogger Logger;
         private readonly IDriverConnectionManager driverConnectionManager;
-        private readonly IServoCatDeviceFactory servoCatDeviceFactory;
         private readonly Guid driverClientId;
         private readonly ISerialUtilities serialUtilities;
         private readonly IMicroCacheFactory microCacheFactory;
@@ -69,7 +68,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             sharedState: CompositionRoot.Kernel.Get<ISharedState>(),
             options: CompositionRoot.Kernel.Get<IServoCatOptions>(),
             driverConnectionManager: CompositionRoot.Kernel.Get<IDriverConnectionManager>(),
-            servoCatDeviceFactory: CompositionRoot.Kernel.Get<IServoCatDeviceFactory>(),
+            servoCatDevice: CompositionRoot.Kernel.Get<IServoCatDevice>(),
             logger: CompositionRoot.Kernel.Get<TraceLogger>("Telescope"),
             astroUtilities: CompositionRoot.Kernel.Get<IAstroUtils>(),
             ascomUtilities: CompositionRoot.Kernel.Get<Util>(),
@@ -83,7 +82,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             ISharedState sharedState,
             IServoCatOptions options,
             IDriverConnectionManager driverConnectionManager,
-            IServoCatDeviceFactory servoCatDeviceFactory,
+            IServoCatDevice servoCatDevice,
             TraceLogger logger,
             IAstroUtils astroUtilities,
             Util ascomUtilities,
@@ -106,7 +105,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 this.sharedState = sharedState;
                 this.servoCatOptions = options;
                 this.driverConnectionManager = driverConnectionManager;
-                this.servoCatDeviceFactory = servoCatDeviceFactory;
+                this.servoCatDevice = servoCatDevice;
                 this.serialUtilities = serialUtilities;
                 this.microCacheFactory = microCacheFactory;
                 this.astrometryConverter = astrometryConverter;
@@ -159,7 +158,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public void SetupDialog() {
             try {
-                SetupVM.Show(this.servoCatOptions, serialUtilities);
+                SetupVM.Show(sharedState, servoCatDevice, servoCatOptions, serialUtilities, Logger);
             } catch (Exception ex) {
                 Logger.LogMessageCrLf("OpenSetupDialog", $"Exception: {ex}");
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -220,12 +219,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 if (value) {
                     try {
                         var channel = driverConnectionManager.Connect(driverClientId, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).Result;
-                        servoCatDevice = servoCatDeviceFactory.Create(channel);
-                        servoCatDevice.Initialize(SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).Wait();
+                        AsyncContext.Run(() => servoCatDevice.Open(channel, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)));
                     } catch (Exception e) {
                         LogException("Connected Set", "Failed to connect", e);
                         try {
-                            driverConnectionManager.Disconnect(driverClientId, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).Wait();
+                            AsyncContext.Run(() => driverConnectionManager.Disconnect(driverClientId, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)));
                         } catch (Exception e2) {
                             LogException("Connected Set", "Failed to disconnect after failed connection", e2);
                         }
@@ -236,7 +234,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                     connectedState = true;
                 } else {
                     try {
-                        driverConnectionManager.Disconnect(driverClientId, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).Wait();
+                        AsyncContext.Run(() => driverConnectionManager.Disconnect(driverClientId, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)));
                     } catch (Exception e) {
                         LogException("Connected Set", "Failed to disconnect", e);
                     }
