@@ -195,7 +195,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
         }
 
         private async Task GotoExtendedPrecisionRequest(byte[] request) {
-            var expectedXOR = XORResponse(request, 1, request.Length - 1);
+            var expectedXOR = XORResponse(request, 1, request.Length - 2);
             var actualXOR = request[18];
             if (expectedXOR != actualXOR) {
                 logger.LogMessage("GotoExtendedPrecisionRequest", "Failed - XOR validation");
@@ -222,7 +222,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
         }
 
         private async Task GotoLegacyRequest(byte[] request) {
-            var expectedXOR = XORResponse(request, 1, request.Length - 1);
+            var expectedXOR = XORResponse(request, 1, request.Length - 2);
             var actualXOR = request[15];
             if (expectedXOR != actualXOR) {
                 logger.LogMessage("GotoLegacyRequest", "Failed - XOR validation");

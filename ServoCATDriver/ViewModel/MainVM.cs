@@ -176,12 +176,14 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                     AtPark = status.MotionStatus.HasFlag(MotionStatusEnum.PARK);
                     IsSlewing = status.MotionStatus.HasFlag(MotionStatusEnum.USER_MOTION) || status.MotionStatus.HasFlag(MotionStatusEnum.GOTO);
                     IsAligned = status.MotionStatus.HasFlag(MotionStatusEnum.ALIGN);
-                    RA = status.Coordinates.RA;
-                    Dec = status.Coordinates.Dec;
+                    var deviceTopocentricCoordinates = astrometryConverter.ToTopocentric(status.Coordinates);
+                    var syncedTopocentricCoordinates = SharedState.SyncOffset.Rotate(deviceTopocentricCoordinates, false);
+                    var syncedCelestialCoordinates = astrometryConverter.ToCelestial(syncedTopocentricCoordinates, status.Coordinates.Epoch);
 
-                    var topocentricCoordinates = astrometryConverter.ToTopocentric(status.Coordinates);
-                    Altitude = topocentricCoordinates.Altitude;
-                    Azimuth = topocentricCoordinates.Azimuth;
+                    RA = syncedCelestialCoordinates.RA;
+                    Dec = syncedCelestialCoordinates.Dec;
+                    Altitude = syncedTopocentricCoordinates.Altitude;
+                    Azimuth = syncedTopocentricCoordinates.Azimuth;
                     await Task.Delay(ServoCatOptions.TelescopeStatusCacheTTL, ct);
                 }
             } catch (TaskCanceledException) {

@@ -136,23 +136,21 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         private T DeviceActionWithTimeout<T>(Func<CancellationToken, Task<T>> op) {
             var timeoutCts = new CancellationTokenSource(servoCatOptions.DeviceRequestTimeout);
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, disconnectTokenSource.Token);
-            var resultTask = op(linkedCts.Token);
+
             try {
-                resultTask.Wait();
-            } catch (AggregateException ex) when (ex.InnerException is EndOfStreamException eex) {
+                return AsyncContext.Run<T>(() => op(linkedCts.Token));
+            } catch (EndOfStreamException) {
                 LogMessage("DeviceActionWithTimeout", "Reached end of stream while reading from device. Disconnecting");
                 _ = Task.Run(() => Connected = false);
-                throw eex;
-            } catch (AggregateException ex) {
-                throw ex.InnerException;
+                throw;
+            } catch (OperationCanceledException e) {
+                if (timeoutCts.IsCancellationRequested) {
+                    throw new TimeoutException($"Operation timed out after {servoCatOptions.DeviceRequestTimeout}", e);
+                } else if (disconnectTokenSource.IsCancellationRequested) {
+                    throw new DriverException("Driver disconnected", e);
+                }
+                throw;
             }
-            if (timeoutCts.IsCancellationRequested) {
-                throw new TimeoutException($"Operation timed out after {servoCatOptions.DeviceRequestTimeout}");
-            } else if (disconnectTokenSource.IsCancellationRequested) {
-                throw new DriverException("Driver disconnected");
-            }
-
-            return resultTask.Result;
         }
 
         // PUBLIC COM INTERFACE ITelescopeV3 IMPLEMENTATION
@@ -308,9 +306,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 epoch.ToString(),
                 () => {
                     var status = DeviceActionWithTimeout(servoCatDevice.GetExtendedStatus);
-                    var celestialCoordinates = astrometryConverter.TransformEpoch(status.Coordinates, epoch);
-                    var topocentricCoordinates = astrometryConverter.ToTopocentric(status.Coordinates);
-                    return new ServoCatStatus(celestialCoordinates, topocentricCoordinates, status.MotionStatus);
+                    var deviceCelestialCoordinates = astrometryConverter.TransformEpoch(status.Coordinates, epoch);
+                    var deviceTopocentricCoordinates = astrometryConverter.ToTopocentric(status.Coordinates);
+                    var syncedTopocentricCoordinates = sharedState.SyncOffset.Rotate(deviceTopocentricCoordinates, false);
+                    var syncedCelestialCoordinates = astrometryConverter.ToCelestial(syncedTopocentricCoordinates, epoch);
+                    return new ServoCatStatus(deviceCelestialCoordinates, syncedCelestialCoordinates, deviceTopocentricCoordinates, syncedTopocentricCoordinates, status.MotionStatus);
                 },
                 servoCatOptions.TelescopeStatusCacheTTL);
         }
@@ -331,7 +331,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         public double Altitude {
             get {
                 var status = GetTelescopeStatus();
-                var altitude = status.TopocentricCoordinates.Altitude.Degrees;
+                var altitude = status.SyncedTopocentricCoordinates.Altitude.Degrees;
                 Logger.LogMessage("Altitude", $"Get - {altitude}");
                 return altitude;
             }
@@ -381,7 +381,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         public double Azimuth {
             get {
                 var status = GetTelescopeStatus();
-                var azimuth = status.TopocentricCoordinates.Azimuth.Degrees;
+                var azimuth = status.SyncedTopocentricCoordinates.Azimuth.Degrees;
                 Logger.LogMessage("Azimuth", $"Get - {azimuth}");
                 return azimuth;
             }
@@ -497,17 +497,15 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public bool CanSync {
             get {
-                // TODO: Add sync support, where deltas are in Alt/Az
-                Logger.LogMessage("CanSync", "Get - " + false.ToString());
-                return false;
+                Logger.LogMessage("CanSync", "Get - " + true.ToString());
+                return true;
             }
         }
 
         public bool CanSyncAltAz {
             get {
-                // TODO: Add sync support, where deltas are in Alt/Az
-                Logger.LogMessage("CanSyncAltAz", "Get - " + false.ToString());
-                return false;
+                Logger.LogMessage("CanSyncAltAz", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -521,7 +519,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         public double Declination {
             get {
                 var status = GetTelescopeStatus();
-                var dec = status.CelestialCoordinates.Dec;
+                var dec = status.SyncedCelestialCoordinates.Dec;
                 Logger.LogMessage("Declination", $"Get - {dec.DMS}");
                 return dec.Degrees;
             }
@@ -626,7 +624,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         public double RightAscension {
             get {
                 var status = GetTelescopeStatus();
-                var ra = status.CelestialCoordinates.RA;
+                var ra = status.SyncedCelestialCoordinates.RA;
                 Logger.LogMessage("RightAscension", $"Get - {ra.HMS}");
                 return ra.Hours;
             }
@@ -721,10 +719,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         private void StartSlewToTarget(Angle rightAscension, Angle declination) {
+            var epoch = GetEpoch();
+            var syncedCoordinates = new ICRSCoordinates(ra: rightAscension, dec: declination, epoch: epoch);
+            var syncedTopocentricCoordinates = astrometryConverter.ToTopocentric(syncedCoordinates, syncedCoordinates.ReferenceDateTime);
+            var deviceTopocentricCoordinates = sharedState.SyncOffset.Rotate(syncedTopocentricCoordinates, true);
+            var deviceCoordinates = astrometryConverter.ToCelestial(deviceTopocentricCoordinates, epoch);
             var result = DeviceActionWithTimeout((ct) => {
-                var epoch = GetEpoch();
-                var coordinates = new ICRSCoordinates(ra: rightAscension, dec: declination, epoch: epoch);
-                return servoCatDevice.GotoExtendedPrecision(coordinates, ct);
+                return servoCatDevice.GotoExtendedPrecision(deviceCoordinates, ct);
             });
             if (!result) {
                 throw new DriverException($"GotoExtendedPrecision to RA={rightAscension.HMS}, Dec={declination.DMS} failed");
@@ -907,20 +908,59 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public void SyncToAltAz(double Azimuth, double Altitude) {
-            // TODO: Implement sync methods
-            Logger.LogMessage("SyncToAltAz", "Not implemented");
-            throw new MethodNotImplementedException("SyncToAltAz");
+            if (Azimuth < 0.0d || Azimuth > 360.0d || Altitude < -90.0d || Altitude > 90.0d) {
+                Logger.LogMessage("SyncToAltAz", $"Invalid Azimuth ({Azimuth}) and/or Altitude ({Altitude})");
+                throw new InvalidValueException($"Invalid coordinates");
+            }
+
+            var currentPosition = GetTelescopeStatus().TopocentricCoordinates;
+            var syncToPosition = new TopocentricCoordinates(
+                altitude: Angle.ByDegree(Altitude),
+                azimuth: Angle.ByDegree(Azimuth),
+                latitude: Angle.ByDegree(servoCatOptions.Latitude),
+                longitude: Angle.ByDegree(servoCatOptions.Longitude),
+                elevation: servoCatOptions.Elevation,
+                DateTime.Now);
+
+            Logger.LogMessage("SyncToAltAz", $"Syncing current position {currentPosition} to target {syncToPosition}");
+            var difference = TopocentricDifference.Difference(currentPosition, syncToPosition);
+            Logger.LogMessage("SyncToAltAz", $"Offset with angle {difference.RotationAngle.DMS} applied");
+            sharedState.SyncOffset = difference;
         }
 
-        public void SyncToCoordinates(double RightAscension, double Declination) {
-            Logger.LogMessage("SyncToCoordinates", "Not implemented");
-            throw new MethodNotImplementedException("SyncToCoordinates");
+        public void SyncToCoordinates(double ra, double dec) {
+            if (ra < 0.0d || ra > 24.0d || dec < -90.0d || dec > 90.0d) {
+                Logger.LogMessage("SyncToCoordinates", $"Invalid RightAscension ({ra}) and/or Declination ({dec})");
+                throw new InvalidValueException($"Invalid coordinates");
+            }
+
+            var status = GetTelescopeStatus();
+            var currentPosition = status.TopocentricCoordinates;
+            var currentCoordinates = status.CelestialCoordinates;
+            var syncToCoordinates = new ICRSCoordinates(ra: Angle.ByHours(ra), dec: Angle.ByDegree(dec), epoch: GetEpoch());
+            var syncToPosition = astrometryConverter.ToTopocentric(syncToCoordinates);
+
+            Logger.LogMessage("SyncToTarget", $"Syncing current position {currentCoordinates} to target {syncToPosition}");
+            var difference = TopocentricDifference.Difference(currentPosition, syncToPosition);
+            Logger.LogMessage("SyncToTarget", $"Offset with angle {difference.RotationAngle.DMS} applied");
+            sharedState.SyncOffset = difference;
         }
 
         public void SyncToTarget() {
-            Logger.LogMessage("SyncToTarget", "Not implemented");
-            throw new MethodNotImplementedException("SyncToTarget");
+            var status = GetTelescopeStatus();
+            var currentPosition = status.TopocentricCoordinates;
+            var currentCoordinates = status.CelestialCoordinates;
+            var targetCoordinates = TargetCoordinates;
+
+            Logger.LogMessage("SyncToTarget", $"Syncing current position {currentCoordinates} to target {targetCoordinates}");
+            var syncToPosition = astrometryConverter.ToTopocentric(targetCoordinates);
+
+            var difference = TopocentricDifference.Difference(currentPosition, syncToPosition);
+            Logger.LogMessage("SyncToTarget", $"Offset with angle {difference.RotationAngle.DMS} applied");
+            sharedState.SyncOffset = difference;
         }
+
+        public ICRSCoordinates TargetCoordinates => new ICRSCoordinates(ra: Angle.ByHours(TargetRightAscension), dec: Angle.ByDegree(TargetDeclination), epoch: GetEpoch());
 
         public double TargetDeclination {
             get {

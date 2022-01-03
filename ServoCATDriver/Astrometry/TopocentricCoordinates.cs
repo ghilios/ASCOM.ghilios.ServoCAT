@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using MathNet.Spatial.Euclidean;
 using System;
 
 namespace ASCOM.ghilios.ServoCAT.Astrometry {
@@ -45,6 +46,34 @@ namespace ASCOM.ghilios.ServoCAT.Astrometry {
 
         public override string ToString() {
             return $"Alt={Altitude.DMS}, Az={Azimuth.DMS}, lat={Latitude:0.0000}°, long={Longitude:0.0000}°, elevation={Elevation:0.00}m";
+        }
+
+        public Vector3D ToUnitCartesian() {
+            var polarAngle = Angle.ByDegree(90.0d - Altitude.Degrees);
+            var x = Math.Cos(Azimuth.Radians) * Math.Sin(polarAngle.Radians);
+            var y = Math.Sin(Azimuth.Radians) * Math.Sin(polarAngle.Radians);
+            var z = Math.Cos(polarAngle.Radians);
+            return new Vector3D(x, y, z);
+        }
+
+        public static TopocentricCoordinates FromUnitCartesian(Vector3D coords, Angle latitude, Angle longitude, double elevation, DateTime referenceDateTime) {
+            var polarAngle = Angle.ByRadians(Math.Acos(coords.Z));
+            Angle azimuth;
+            if (coords.X > 0) {
+                azimuth = Angle.ByRadians(Math.Atan(coords.Y / coords.X));
+            } else if (coords.X < 0) {
+                azimuth = Angle.ByRadians(Math.Atan(coords.Y / coords.X) + Math.PI);
+            } else {
+                azimuth = Angle.ByRadians(Math.PI / 2.0d);
+            }
+            var altitude = Angle.ByDegree(90.0d - polarAngle.Degrees);
+            return new TopocentricCoordinates(
+                altitude: altitude,
+                azimuth: azimuth,
+                latitude: latitude,
+                longitude: longitude,
+                elevation: elevation,
+                referenceDateTime: referenceDateTime);
         }
     }
 }

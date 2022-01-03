@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using ASCOM.ghilios.ServoCAT.Astrometry;
 using Ninject;
 using System;
 
@@ -29,5 +30,7 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         TimeSpan DeviceWriteTimeout { get; }
 
         bool StartedByCOM { get; }
+
+        TopocentricDifference SyncOffset { get; set; }
     }
 }

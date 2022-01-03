@@ -25,8 +25,8 @@ namespace ASCOM.ghilios.ServoCAT.Service.Utility {
 
         ~ReferenceCountedObjectBase() {
             if (constructed) {
-                LocalServerApp.App.DecrementObjectCount();
-                LocalServerApp.App.ExitIf();
+                LocalServerApp.App?.DecrementObjectCount();
+                LocalServerApp.App?.ExitIf();
             }
         }
     }

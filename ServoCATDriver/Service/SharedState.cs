@@ -10,14 +10,17 @@
 
 #endregion "copyright"
 
+using ASCOM.ghilios.ServoCAT.Astrometry;
 using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Utility;
 using Ninject;
+using PostSharp.Patterns.Model;
 using System;
 using System.Runtime.InteropServices;
 
 namespace ASCOM.ghilios.ServoCAT.Service {
 
-    public class SharedState : ISharedState {
+    public class SharedState : BaseINPC, ISharedState {
 
         public SharedState() {
             TelescopeDriverId = ((ProgIdAttribute)Attribute.GetCustomAttribute(typeof(Telescope.Telescope), typeof(ProgIdAttribute))).Value;
@@ -37,5 +40,15 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public TimeSpan DeviceWriteTimeout => TimeSpan.FromSeconds(2);
 
         public bool StartedByCOM => LocalServerApp.App.StartedByCOM;
+
+        private TopocentricDifference syncOffset = TopocentricDifference.ZERO;
+
+        public TopocentricDifference SyncOffset {
+            get => syncOffset;
+            set {
+                syncOffset = value;
+                RaisePropertyChanged();
+            }
+        }
     }
 }

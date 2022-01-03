@@ -21,18 +21,21 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         private readonly IServoCatOptions options;
         private readonly AstrometryConverter astrometryConverter;
         private readonly TraceLogger logger;
+        private readonly ISharedState sharedState;
 
         public ServoCatDeviceFactory(
             IServoCatOptions options,
             AstrometryConverter astrometryConverter,
+            ISharedState sharedState,
             [Named("Telescope")] TraceLogger logger) {
             this.options = options;
             this.astrometryConverter = astrometryConverter;
+            this.sharedState = sharedState;
             this.logger = logger;
         }
 
         public IServoCatDevice Create(IChannel channel) {
-            return new ServoCatDevice(channel, options, astrometryConverter, logger);
+            return new ServoCatDevice(channel, options, astrometryConverter, sharedState, logger);
         }
     }
 }

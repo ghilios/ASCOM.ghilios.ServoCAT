@@ -27,6 +27,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         private readonly TraceLogger logger;
         private readonly IServoCatOptions options;
         private readonly AstrometryConverter astrometryConverter;
+        private readonly ISharedState sharedState;
         private bool initialized = false;
         private FirmwareVersion firmwareVersion;
 
@@ -34,10 +35,12 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             IChannel channel,
             IServoCatOptions options,
             AstrometryConverter astrometryConverter,
+            ISharedState sharedState,
             TraceLogger logger) {
             this.channel = channel;
             this.options = options;
             this.astrometryConverter = astrometryConverter;
+            this.sharedState = sharedState;
             this.logger = logger;
         }
 
@@ -144,7 +147,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             var sign = coordinates.Dec.NonNegative ? "+" : "-";
             var absDec = coordinates.Dec.ToAbsolute();
-            var command = FormattableString.Invariant($"g{coordinates.RA.Hours:00.000} {sign}{absDec.Degrees:00.000}");
+            var command = FormattableString.Invariant($"g{coordinates.RA.Hours:##.###} {sign}{absDec.Degrees:##.###}");
             var commandBytes = new byte[command.Length + 1];
             Encoding.ASCII.GetBytes(command, 0, command.Length - 1, commandBytes, 0);
             commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, command.Length - 1);
@@ -167,7 +170,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             var command = FormattableString.Invariant($"G{coordinates.RA.Hours:00.00000} {sign}{absDec.Degrees:00.0000}");
             var commandBytes = new byte[command.Length + 1];
             Encoding.ASCII.GetBytes(command, 0, command.Length - 1, commandBytes, 0);
-            commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, command.Length - 1);
+            commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, commandBytes.Length - 2);
             if (firmwareVersion.Version > 60) {
                 var response = await SendCommandFixedResponse(commandBytes, 1, ct);
                 // The spec calls for a 'G' response for success, and 'X' for failure

@@ -108,6 +108,12 @@
     <Reference Include="ASCOM.Utilities.Video, Version=6.1.0.0, Culture=neutral, PublicKeyToken=565de7938946fba7, processorArchitecture=MSIL">
       <HintPath>..\packages\ASCOM.Platform.6.5.1\lib\net40\ASCOM.Utilities.Video.dll</HintPath>
     </Reference>
+    <Reference Include="MathNet.Numerics, Version=4.9.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MathNet.Numerics.4.9.1\lib\net461\MathNet.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="MathNet.Spatial, Version=0.6.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MathNet.Spatial.0.6.0\lib\net461\MathNet.Spatial.dll</HintPath>
+    </Reference>
     <Reference Include="Ninject, Version=3.3.4.0, Culture=neutral, PublicKeyToken=c7192dc5380945e7, processorArchitecture=MSIL">
       <HintPath>..\packages\Ninject.3.3.4\lib\net45\Ninject.dll</HintPath>
     </Reference>
@@ -190,6 +196,8 @@
     <Compile Include="Astrometry\Epoch.cs" />
     <Compile Include="Astrometry\ICRSCoordinates.cs" />
     <Compile Include="Astrometry\TopocentricCoordinates.cs" />
+    <Compile Include="Astrometry\TopocentricDifference.cs" />
+    <Compile Include="Converters\TopocentricDifferenceConverter.cs" />
     <Compile Include="Converters\AngleHMSConverter.cs" />
     <Compile Include="Converters\AngleDMSConverter.cs" />
     <Compile Include="Converters\EnumStaticDescriptionTypeConverter.cs" />

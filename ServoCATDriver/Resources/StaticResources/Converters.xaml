@@ -15,4 +15,5 @@
     <converters:EnumStaticDescriptionValueConverter x:Key="EnumStaticDescriptionValueConverter" />
     <converters:AngleDMSConverter x:Key="AngleDMSConverter" />
     <converters:AngleHMSConverter x:Key="AngleHMSConverter" />
+    <converters:TopocentricDifferenceConverter x:Key="TopocentricDifferenceConverter" />
 </ResourceDictionary>

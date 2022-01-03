@@ -117,7 +117,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                 clientCount = connectedClients.Count;
             }
 
-            ServerLogger.LogMessage("Main", $"{e.ClientGuid} disconnected. {clientCount} connected clients remaining");
+            ServerLogger?.LogMessage("Main", $"{e.ClientGuid} disconnected. {clientCount} connected clients remaining");
             if (clientCount == 0 && StartedByCOM) {
                 ServerLogger.LogMessage("Main", $"Making main window hidden");
                 Dispatcher.Invoke(() => mainWindow.Hide());
