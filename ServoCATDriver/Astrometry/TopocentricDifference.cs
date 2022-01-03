@@ -58,11 +58,6 @@ namespace ASCOM.ghilios.ServoCAT.Astrometry {
             return new TopocentricDifference(quaternion);
         }
 
-        public static TopocentricDifference operator +(TopocentricDifference lhs, TopocentricDifference rhs) {
-            var resultRotation = lhs.rotation + rhs.rotation;
-            return new TopocentricDifference(resultRotation.Normalized);
-        }
-
         public override string ToString() {
             return $"Angle: {RotationAngle.DMS}, Axis: [{rotation.ImagX}, {rotation.ImagY}, {rotation.ImagZ}]";
         }

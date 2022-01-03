@@ -176,6 +176,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                     AtPark = status.MotionStatus.HasFlag(MotionStatusEnum.PARK);
                     IsSlewing = status.MotionStatus.HasFlag(MotionStatusEnum.USER_MOTION) || status.MotionStatus.HasFlag(MotionStatusEnum.GOTO);
                     IsAligned = status.MotionStatus.HasFlag(MotionStatusEnum.ALIGN);
+                    var deviceCelestialCoordinates = astrometryConverter.TransformEpoch(status.Coordinates, GetEpoch());
                     var deviceTopocentricCoordinates = astrometryConverter.ToTopocentric(status.Coordinates);
                     var syncedTopocentricCoordinates = SharedState.SyncOffset.Rotate(deviceTopocentricCoordinates, false);
                     var syncedCelestialCoordinates = astrometryConverter.ToCelestial(syncedTopocentricCoordinates, status.Coordinates.Epoch);
@@ -200,6 +201,10 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                 ConnectedDirectly = false;
                 await driverConnectionManager.Disconnect(deviceClientId, ct);
             }
+        }
+
+        private Epoch GetEpoch() {
+            return ServoCatOptions.UseJ2000 ? Epoch.J2000 : Epoch.JNOW;
         }
 
         public IServoCatOptions ServoCatOptions { get; private set; }
