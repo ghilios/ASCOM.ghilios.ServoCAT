@@ -235,6 +235,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock
                     Grid.Row="3" Grid.Column="1"
@@ -645,6 +646,32 @@
 
                 <StackPanel
                     Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                    <TextBlock
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        TextAlignment="Right"
+                        Margin="3,3,15,3"
+                        Text="Speed"
+                        Style="{StaticResource PropertyTextLabel}" />
+                    <ts:HorizontalToggleSwitch
+                        UncheckedContent="2"
+                        CheckedContent="1"
+                        Width="60"
+                        Height="20"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="2,10,2,10"
+                        Checked="HorizontalToggleSwitch_Toggled"
+                        Unchecked="HorizontalToggleSwitch_Toggled"
+                        IsEnabled="{Binding ServoCatDevice.IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                        IsChecked="{Binding ServoCatOptions.UseSpeed1}" />
+                </StackPanel>
+
+                <StackPanel
+                    Grid.Row="20" Grid.Column="0" Grid.ColumnSpan="3"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">

@@ -47,5 +47,6 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         TimeSpan SlewTimeout { get; }
         bool FirmwareConfigLoaded { get; set; }
         ServoCatFirmwareConfig FirmwareConfig { get; }
+        bool UseSpeed1 { get; set; }
     }
 }

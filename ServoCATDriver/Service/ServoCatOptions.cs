@@ -51,6 +51,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             }
             SimulatorAligned = ascomProfile.GetBool(driverId, "simulatorAligned", connectionSettingsKey, true);
             FirmwareConfigLoaded = ascomProfile.GetBool(driverId, "firmwareConfigLoaded", connectionSettingsKey, false);
+            UseSpeed1 = ascomProfile.GetBool(driverId, "useSpeed1", astrometrySettingKey, false);
             LoadFirmwareConfig();
         }
 
@@ -65,6 +66,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ascomProfile.WriteString(driverId, "simulatorFirmwareSubVersion", connectionSettingsKey, $"{SimulatorVersion.SubVersion}");
             ascomProfile.WriteBool(driverId, "simulatorAligned", connectionSettingsKey, SimulatorAligned);
             ascomProfile.WriteBool(driverId, "firmwareConfigLoaded", connectionSettingsKey, FirmwareConfigLoaded);
+            ascomProfile.WriteBool(driverId, "useSpeed1", connectionSettingsKey, UseSpeed1);
             SaveFirmwareConfig();
         }
 
@@ -152,5 +154,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public TimeSpan SlewTimeout => TimeSpan.FromMinutes(1);
         public bool FirmwareConfigLoaded { get; set; }
         public ServoCatFirmwareConfig FirmwareConfig { get; } = new ServoCatFirmwareConfig();
+
+        public bool UseSpeed1 { get; set; }
     }
 }
