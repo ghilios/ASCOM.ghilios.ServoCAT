@@ -609,7 +609,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         public void Park() {
             Logger.LogMessage("Park", "Started");
             var result = DeviceActionWithTimeout(servoCatDevice.Park);
-            WaitForStatusPredicate(ms => ms.HasFlag(MotionStatusEnum.PARK), servoCatOptions.SlewTimeout).Wait();
+            AsyncContext.Run(() => WaitForStatusPredicate(ms => ms.HasFlag(MotionStatusEnum.PARK), servoCatOptions.SlewTimeout));
             Logger.LogMessage("Park", $"Completed with {result}");
         }
 
@@ -790,7 +790,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             try {
                 StartSlewToTarget(rightAscension, declination);
                 Logger.LogMessage("SlewToAltAz", $"request completed successfully. Telescope is slewing now. Waiting for completion since this method is not Async");
-                WaitForStatusPredicate(ms => (ms & ~MotionStatusEnum.GOTO) != 0, servoCatOptions.SlewTimeout).Wait();
+                AsyncContext.Run(() => WaitForStatusPredicate(ms => (ms & ~MotionStatusEnum.GOTO) != 0, servoCatOptions.SlewTimeout));
                 Logger.LogMessage("SlewToAltAz", $"request completed successfully.");
             } catch (Exception ex) {
                 Logger.LogMessage("SlewToAltAz", $"Failed - {ex.Message}");
@@ -866,7 +866,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             var declination = Angle.ByDegree(TargetDeclination);
             try {
                 StartSlewToTarget(rightAscension, declination);
-                WaitForStatusPredicate(ms => (ms & ~MotionStatusEnum.GOTO) != 0, servoCatOptions.SlewTimeout).Wait();
+                AsyncContext.Run(() => WaitForStatusPredicate(ms => (ms & ~MotionStatusEnum.GOTO) != 0, servoCatOptions.SlewTimeout));
                 Logger.LogMessage("SlewToTarget", $"Initial request completed successfully. Telescope is slewing now");
             } catch (Exception ex) {
                 Logger.LogMessage("SlewToTarget", $"Failed - {ex.Message}");
@@ -1186,8 +1186,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return;
             }
 
-            driverConnectionManager.Disconnect(driverClientId, CancellationToken.None).Wait();
-            driverConnectionManager.UnregisterClient(driverClientId).Wait();
+            AsyncContext.Run(() => driverConnectionManager.Disconnect(driverClientId, CancellationToken.None));
+            AsyncContext.Run(() => driverConnectionManager.UnregisterClient(driverClientId));
+            LocalServerApp.App?.DecrementObjectCount();
+            LocalServerApp.App?.ExitIf();
         }
     }
 }

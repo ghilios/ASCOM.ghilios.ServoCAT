@@ -66,11 +66,14 @@ namespace ASCOM.ghilios.ServoCAT.IO {
 
                     if (client.Connected) {
                         logger.LogMessage("DriverConnectionManager.Connect", $"Client {guid} is already connected");
-                        return GetActiveConnection();
                     }
 
-                    activeConnection = this.connectionFactory.Create();
-                    await activeConnection.Open(ct);
+                    if (activeConnection != null) {
+                        success = !client.Connected;
+                        return activeConnection;
+                    }
+
+                    activeConnection = await CreateNewChannel(ct);
                     client.Connected = true;
                     success = true;
                     return activeConnection;
@@ -79,6 +82,17 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 if (success) {
                     OnConnected?.Invoke(this, new ConnectionEventArgs() { ClientGuid = guid });
                 }
+            }
+        }
+
+        private async Task<IChannel> CreateNewChannel(CancellationToken ct) {
+            var activeConnection = this.connectionFactory.Create();
+            try {
+                await activeConnection.Open(ct);
+                return activeConnection;
+            } catch (Exception e) {
+                logger.LogMessageCrLf("DriverConnectionManager.CreateNewChannel", $"Failed to create new channel. {e.Message}");
+                throw;
             }
         }
 
@@ -122,13 +136,6 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 await DisconnectClient(client, CancellationToken.None);
                 registeredClients.Remove(client);
             }
-        }
-
-        private IChannel GetActiveConnection() {
-            if (activeConnection == null) {
-                throw new Exception("No active connection found, when one was expected");
-            }
-            return activeConnection;
         }
 
         private async Task DisconnectClient(ClientInfo client, CancellationToken ct) {

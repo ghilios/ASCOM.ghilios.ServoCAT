@@ -57,7 +57,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public async Task Open(IChannel channel, CancellationToken ct) {
             if (initialized && !ReferenceEquals(channel, this.channel)) {
-                logger.LogMessage("ServoCatDevice.Open", "Device is already open when Open is called with a difference channel. Closing existing connection and opening new one");
+                logger.LogMessage("ServoCatDevice.Open", "Device is already open when Open is called with a different channel. Closing existing connection and opening new one");
                 await Close(ct);
             }
 

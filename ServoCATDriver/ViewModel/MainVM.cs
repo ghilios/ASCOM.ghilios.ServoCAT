@@ -84,7 +84,8 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             }
 
             Logger.LogMessage("MainVM", $"OnDisconnected - {clientGuid}, {connectionCount} connections remaining");
-            if (connectionCount == 1 && !ConnectedDirectly) {
+            if ((SharedState.StartedByCOM && connectionCount == 0)
+                || (!SharedState.StartedByCOM && connectionCount <= 1)) {
                 // Last disconnection, so stop polling
                 try {
                     StopPolling();
