@@ -41,6 +41,7 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         FirmwareVersion SimulatorVersion { get; set; }
         bool SimulatorAligned { get; set; }
         bool UseJ2000 { get; set; }
+        TimeSpan MainWindowPollInterval { get; }
         TimeSpan TelescopeStatusCacheTTL { get; }
         TimeSpan DeviceRequestTimeout { get; }
         TimeSpan SlewTimeout { get; }

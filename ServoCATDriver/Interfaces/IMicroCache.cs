@@ -12,18 +12,24 @@
 
 using System;
 using System.Runtime.Caching;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
     public interface IMicroCache<T> {
 
-        bool Contains(string key);
+        Task<bool> Contains(string key, CancellationToken ct);
 
         T GetOrAdd(string key, Func<T> loadFunction, Func<CacheItemPolicy> getCacheItemPolicyFunction);
 
         T GetOrAdd(string key, Func<T> loadFunction, TimeSpan timeToLive);
 
-        void Remove(string key);
+        Task<T> GetOrAddAsync(string key, Func<Task<T>> loadFunction, Func<CacheItemPolicy> getCacheItemPolicyFunction, CancellationToken ct);
+
+        Task<T> GetOrAddAsync(string key, Func<Task<T>> loadFunction, TimeSpan timeToLive, CancellationToken ct);
+
+        Task Remove(string key, CancellationToken ct);
     }
 
     public interface IMicroCacheFactory {

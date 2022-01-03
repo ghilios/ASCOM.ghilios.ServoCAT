@@ -194,7 +194,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                     Dec = syncedCelestialCoordinates.Dec;
                     Altitude = syncedTopocentricCoordinates.Altitude;
                     Azimuth = syncedTopocentricCoordinates.Azimuth;
-                    await Task.Delay(ServoCatOptions.TelescopeStatusCacheTTL, ct);
+                    await Task.Delay(ServoCatOptions.MainWindowPollInterval, ct);
                 }
             } catch (TaskCanceledException) {
                 Logger.LogMessage("MainVM.ConnectAndPoll", $"Terminated");
