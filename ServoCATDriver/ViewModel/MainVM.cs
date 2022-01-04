@@ -186,10 +186,9 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                     AtPark = status.MotionStatus.HasFlag(MotionStatusEnum.PARK);
                     IsSlewing = status.MotionStatus.HasFlag(MotionStatusEnum.USER_MOTION) || status.MotionStatus.HasFlag(MotionStatusEnum.GOTO);
                     IsAligned = status.MotionStatus.HasFlag(MotionStatusEnum.ALIGN);
-                    var deviceCelestialCoordinates = astrometryConverter.TransformEpoch(status.Coordinates, GetEpoch());
                     var deviceTopocentricCoordinates = astrometryConverter.ToTopocentric(status.Coordinates);
                     var syncedTopocentricCoordinates = SharedState.SyncOffset.Rotate(deviceTopocentricCoordinates, false);
-                    var syncedCelestialCoordinates = astrometryConverter.ToCelestial(syncedTopocentricCoordinates, status.Coordinates.Epoch);
+                    var syncedCelestialCoordinates = astrometryConverter.ToCelestial(syncedTopocentricCoordinates, GetEpoch());
 
                     RA = syncedCelestialCoordinates.RA;
                     Dec = syncedCelestialCoordinates.Dec;

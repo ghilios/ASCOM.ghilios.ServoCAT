@@ -74,6 +74,9 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>ServoCatLogo.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="ASCOM.Astrometry, Version=6.0.0.0, Culture=neutral, PublicKeyToken=565de7938946fba7, processorArchitecture=MSIL">
       <HintPath>..\packages\ASCOM.Platform.6.5.1\lib\net40\ASCOM.Astrometry.dll</HintPath>
@@ -266,6 +269,7 @@
     <Content Include="BootstrapAscomProfileStore.ps1" />
     <Content Include="Resources\ASCOM.ico" />
     <Content Include="Resources\ASCOM.png" />
+    <Resource Include="ServoCatLogo.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
