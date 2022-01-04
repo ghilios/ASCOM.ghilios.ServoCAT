@@ -229,6 +229,29 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
+        public async Task<bool> AbortMove(CancellationToken ct) {
+            using (await singleRequestMutex.LockAsync(ct)) {
+                EnsureChannelOpen();
+                channel.FlushReadExisting();
+
+                var command = "G99.99999 +99.9999";
+                var commandBytes = new byte[command.Length + 1];
+                Encoding.ASCII.GetBytes(command, 0, command.Length, commandBytes, 0);
+                commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, commandBytes.Length - 2);
+                if (firmwareVersion.Version > 60) {
+                    var response = await SendCommandFixedResponse(commandBytes, 1, ct);
+                    // The spec calls for a 'X' response, but we will ignore it
+                    if (response[0] != 'X') {
+                        logger.LogMessage("AbortMove", $"Received {(char)response[0]} instead of X. Ignoring and moving on");
+                        return false;
+                    }
+                } else {
+                    await SendCommandNoResponse(commandBytes, ct);
+                }
+                return true;
+            }
+        }
+
         public async Task<bool> EnableTracking(CancellationToken ct) {
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();

@@ -315,8 +315,9 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public void AbortSlew() {
-            Logger.LogMessage("AbortSlew", "Not implemented");
-            throw new MethodNotImplementedException("AbortSlew");
+            DeviceActionWithTimeout((ct) => {
+                return servoCatDevice.AbortMove(ct);
+            });
         }
 
         public AlignmentModes AlignmentMode {

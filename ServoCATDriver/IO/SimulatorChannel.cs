@@ -261,8 +261,14 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 return;
             }
 
+            const string abortMoveCommand = "G99.99999 +99.9999";
             try {
                 var requestString = Encoding.ASCII.GetString(request);
+                if (requestString.Substring(0, abortMoveCommand.Length) == abortMoveCommand) {
+                    simulatorTelescope.AbortSlew();
+                    return;
+                }
+
                 var raHours = double.Parse(requestString.Substring(1, 8));
                 var sign = requestString[10] == '+' ? 1 : -1;
                 var decDegrees = double.Parse(requestString.Substring(11, 7)) * sign;

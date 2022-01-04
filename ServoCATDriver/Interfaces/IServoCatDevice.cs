@@ -90,6 +90,8 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
         Task<bool> GotoExtendedPrecision(ICRSCoordinates coordinates, CancellationToken ct);
 
+        Task<bool> AbortMove(CancellationToken ct);
+
         Task<bool> EnableTracking(CancellationToken ct);
 
         Task<bool> DisableTracking(Axis axis, CancellationToken ct);
