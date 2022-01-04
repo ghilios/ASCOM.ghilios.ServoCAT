@@ -308,6 +308,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                     var deviceTopocentricCoordinates = astrometryConverter.ToTopocentric(status.Coordinates);
                     var syncedTopocentricCoordinates = sharedState.SyncOffset.Rotate(deviceTopocentricCoordinates, false);
                     var syncedCelestialCoordinates = astrometryConverter.ToCelestial(syncedTopocentricCoordinates, epoch);
+                    slewJustStarted = false;
                     return new ServoCatStatus(deviceCelestialCoordinates, syncedCelestialCoordinates, deviceTopocentricCoordinates, syncedTopocentricCoordinates, status.MotionStatus);
                 },
                 servoCatOptions.TelescopeStatusCacheTTL);
@@ -365,15 +366,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public IAxisRates AxisRates(TelescopeAxes Axis) {
-            // TODO: Implement after adding support for MoveAxis
-            Logger.LogMessage("AxisRates Get", "Not implemented");
-            throw new PropertyNotImplementedException("AxisRates", false);
-
-            /*
-            Logger.LogMessage("AxisRates", "Get - " + Axis.ToString());
-            return new AxisRates(Axis);
-            */
+        public IAxisRates AxisRates(TelescopeAxes axis) {
+            var axisRates = new AxisRates(axis, servoCatOptions);
+            Logger.LogMessage("AxisRates", "Get - " + axis.ToString());
+            return axisRates;
         }
 
         public double Azimuth {
@@ -392,20 +388,14 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public bool CanMoveAxis(TelescopeAxes Axis) {
-            // TODO: Change to true after MoveAxis support is added
-            Logger.LogMessage("CanMoveAxis", "Get - " + false.ToString());
-            return false;
-
-            /*
-            Logger.LogMessage("CanMoveAxis", "Get - " + Axis.ToString());
-            switch (Axis) {
-                case TelescopeAxes.axisPrimary: return false;
-                case TelescopeAxes.axisSecondary: return false;
+        public bool CanMoveAxis(TelescopeAxes axis) {
+            Logger.LogMessage("CanMoveAxis", "Get - " + axis.ToString());
+            switch (axis) {
+                case TelescopeAxes.axisPrimary: return true;
+                case TelescopeAxes.axisSecondary: return true;
                 case TelescopeAxes.axisTertiary: return false;
-                default: throw new InvalidValueException("CanMoveAxis", Axis.ToString(), "0 to 2");
+                default: throw new InvalidValueException("CanMoveAxis", axis.ToString(), "0 to 2");
             }
-            */
         }
 
         public bool CanPark {
@@ -600,10 +590,53 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public void MoveAxis(TelescopeAxes Axis, double Rate) {
-            // TODO: Add MoveAxis support
-            Logger.LogMessage("MoveAxis", "Not implemented");
-            throw new MethodNotImplementedException("MoveAxis");
+        public void MoveAxis(TelescopeAxes axis, double rate) {
+            ServoCatFirmwareAxisConfig axisConfig;
+            Direction direction;
+            if (axis == TelescopeAxes.axisPrimary) {
+                axisConfig = servoCatOptions.FirmwareConfig.AzimuthConfig;
+                direction = rate >= 0.0d ? Direction.East : Direction.West;
+            } else if (axis == TelescopeAxes.axisSecondary) {
+                axisConfig = servoCatOptions.FirmwareConfig.AltitudeConfig;
+                direction = rate >= 0.0d ? Direction.North : Direction.South;
+            } else {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) Failed - MoveAxis does not support the axis");
+                throw new InvalidValueException($"MoveAxis does not support {axis}");
+            }
+            Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched {direction} direction");
+
+            var guideRatePerSec = servoCatOptions.UseSpeed1 ? axisConfig.GuideRatePerSecond1 : axisConfig.GuideRatePerSecond2;
+            var jogRatePerSec = servoCatOptions.UseSpeed1 ? axisConfig.JogRatePerSecond1 : axisConfig.JogRatePerSecond2;
+            var slewRatePerSec = servoCatOptions.UseSpeed1 ? axisConfig.SlewRatePerSecond1 : axisConfig.SlewRatePerSecond2;
+            SlewRate moveRate;
+            if (Math.Abs(rate) < Rate.RateEpsilon) {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched stop rate");
+                moveRate = SlewRate.STOP;
+            } else if (Math.Abs(guideRatePerSec.Degrees - rate) < Rate.RateEpsilon) {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched guide rate of {guideRatePerSec.DMS}/sec");
+                moveRate = SlewRate.GUIDE_SLOW;
+            } else if (Math.Abs(jogRatePerSec.Degrees - rate) < Rate.RateEpsilon) {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched job rate of {jogRatePerSec.DMS}/sec");
+                moveRate = SlewRate.JOG;
+            } else if (Math.Abs(slewRatePerSec.Degrees - rate) < Rate.RateEpsilon) {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched slew rate of {slewRatePerSec.DMS}/sec");
+                moveRate = SlewRate.SLEW;
+            } else {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) Failed - no configured guide rates matched");
+                throw new InvalidValueException($"");
+            }
+
+            var result = DeviceActionWithTimeout((ct) => {
+                return servoCatDevice.Move(direction, moveRate, ct);
+            });
+            if (!result) {
+                Logger.LogMessage("MoveAxis", "{axis}({rate}) Failed. Device reported error");
+                throw new DriverException($"Driver reported MoveAxis failure");
+            }
+
+            // Update the cached status to Slewing immediately returns true
+            var status = GetTelescopeStatus();
+            status.MotionStatus |= MotionStatusEnum.USER_MOTION;
         }
 
         public void Park() {
@@ -611,6 +644,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             var result = DeviceActionWithTimeout(servoCatDevice.Park);
             AsyncContext.Run(() => WaitForStatusPredicate(ms => ms.HasFlag(MotionStatusEnum.PARK), servoCatOptions.SlewTimeout));
             Logger.LogMessage("Park", $"Completed with {result}");
+
+            // Update the cached status to Slewing immediately returns true
+            var status = GetTelescopeStatus();
+            status.MotionStatus |= MotionStatusEnum.GOTO;
         }
 
         public void PulseGuide(GuideDirections Direction, int Duration) {
@@ -896,10 +933,18 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
+        private bool slewJustStarted = false;
+
         public bool Slewing {
             get {
-                var status = GetTelescopeStatus();
-                var slewing = status.MotionStatus.HasFlag(MotionStatusEnum.GOTO) || status.MotionStatus.HasFlag(MotionStatusEnum.USER_MOTION);
+                bool slewing;
+                if (slewJustStarted) {
+                    slewing = true;
+                } else {
+                    var status = GetTelescopeStatus();
+                    slewing = status.MotionStatus.HasFlag(MotionStatusEnum.GOTO) || status.MotionStatus.HasFlag(MotionStatusEnum.USER_MOTION);
+                }
+
                 Logger.LogMessage("Slewing", $"Get - {slewing}");
                 return slewing;
             }

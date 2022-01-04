@@ -51,7 +51,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             }
             SimulatorAligned = ascomProfile.GetBool(driverId, "simulatorAligned", connectionSettingsKey, true);
             FirmwareConfigLoaded = ascomProfile.GetBool(driverId, "firmwareConfigLoaded", connectionSettingsKey, false);
-            UseSpeed1 = ascomProfile.GetBool(driverId, "useSpeed1", astrometrySettingKey, false);
+            UseSpeed1 = ascomProfile.GetBool(driverId, "useSpeed1", astrometrySettingKey, true);
             LoadFirmwareConfig();
         }
 

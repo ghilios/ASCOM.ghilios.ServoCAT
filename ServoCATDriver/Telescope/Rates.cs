@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using ASCOM.DeviceInterface;
+using ASCOM.ghilios.ServoCAT.Interfaces;
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -32,6 +33,8 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
     [ClassInterface(ClassInterfaceType.None)]
     [ComVisible(true)]
     public class Rate : IRate {
+        public static double RateEpsilon = 1.0d / 3600.0d; // 1 arcsecond / sec
+
         private double maximum = 0;
         private double minimum = 0;
 
@@ -47,7 +50,6 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         #region Implementation of IRate
 
         public void Dispose() {
-            // TODO Add any required object clean-up here
         }
 
         public double Maximum {
@@ -58,6 +60,14 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         public double Minimum {
             get { return this.minimum; }
             set { this.minimum = value; }
+        }
+
+        internal static Rate SingleValue(double val) {
+            return new Rate(Math.Max(0.0d, val - RateEpsilon), val + RateEpsilon);
+        }
+
+        public bool Equals(double val) {
+            return val >= Minimum && val <= Maximum;
         }
 
         #endregion
@@ -83,39 +93,26 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         private TelescopeAxes axis;
         private readonly Rate[] rates;
 
-        //
-        // Constructor - Internal prevents public creation
-        // of instances. Returned by Telescope.AxisRates.
-        //
-        internal AxisRates(TelescopeAxes axis) {
-            this.axis = axis;
-            //
-            // This collection must hold zero or more Rate objects describing the
-            // rates of motion ranges for the Telescope.MoveAxis() method
-            // that are supported by your driver. It is OK to leave this
-            // array empty, indicating that MoveAxis() is not supported.
-            //
-            // Note that we are constructing a rate array for the axis passed
-            // to the constructor. Thus we switch() below, and each case should
-            // initialize the array for the rate for the selected axis.
-            //
-            switch (axis) {
-                case TelescopeAxes.axisPrimary:
-                    // TODO Initialize this array with any Primary axis rates that your driver may provide
-                    // Example: m_Rates = new Rate[] { new Rate(10.5, 30.2), new Rate(54.0, 43.6) }
-                    this.rates = new Rate[0];
-                    break;
-
-                case TelescopeAxes.axisSecondary:
-                    // TODO Initialize this array with any Secondary axis rates that your driver may provide
-                    this.rates = new Rate[0];
-                    break;
-
-                case TelescopeAxes.axisTertiary:
-                    // TODO Initialize this array with any Tertiary axis rates that your driver may provide
-                    this.rates = new Rate[0];
-                    break;
+        internal AxisRates(TelescopeAxes axis, IServoCatOptions options) {
+            ServoCatFirmwareAxisConfig axisConfig;
+            if (axis == TelescopeAxes.axisPrimary) {
+                axisConfig = options.FirmwareConfig.AzimuthConfig;
+            } else if (axis == TelescopeAxes.axisSecondary) {
+                axisConfig = options.FirmwareConfig.AltitudeConfig;
+            } else {
+                this.rates = new Rate[0];
+                return;
             }
+
+            var guideRate = options.UseSpeed1 ? axisConfig.GuideRatePerSecond1 : axisConfig.GuideRatePerSecond2;
+            var jogRate = options.UseSpeed1 ? axisConfig.JogRatePerSecond1 : axisConfig.JogRatePerSecond2;
+            var slewRate = options.UseSpeed1 ? axisConfig.SlewRatePerSecond1 : axisConfig.SlewRatePerSecond2;
+            this.axis = axis;
+            this.rates = new Rate[] {
+                Rate.SingleValue(guideRate.Degrees),
+                Rate.SingleValue(jogRate.Degrees),
+                Rate.SingleValue(slewRate.Degrees)
+            };
         }
 
         #region IAxisRates Members
@@ -125,7 +122,6 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public void Dispose() {
-            // TODO Add any required object clean-up here
         }
 
         public IEnumerator GetEnumerator() {
@@ -178,7 +174,6 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             // (tracking rate) that MUST be supported is driveSidereal!
             //
             this.trackingRates = new[] { DriveRates.driveSidereal };
-            // TODO Initialize this array with any additional tracking rates that your driver may provide
         }
 
         #region ITrackingRates Members
@@ -193,7 +188,6 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public void Dispose() {
-            // TODO Add any required object clean-up here
         }
 
         public DriveRates this[int index] {

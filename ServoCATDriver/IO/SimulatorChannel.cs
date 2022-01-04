@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using ASCOM.DeviceInterface;
 using ASCOM.ghilios.ServoCAT.Astrometry;
 using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.ghilios.ServoCAT.Telescope;
@@ -190,8 +191,64 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             await WriteResponse(responseBytes);
         }
 
-        private Task MoveRequest(byte[] request) {
-            throw new NotImplementedException();
+        private async Task MoveRequest(byte[] request) {
+            if (request.Length != 4) {
+                logger.LogMessage("MoveRequest", $"Failed - Invalid length. Expected {4} got {request.Length}");
+            }
+            var expectedXOR = request[1] ^ request[2];
+            var actualXOR = request[3];
+            if (expectedXOR != actualXOR) {
+                logger.LogMessage("MoveRequest", "Failed - XOR validation");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'X' });
+                return;
+            }
+
+            var directionValue = request[1];
+            TelescopeAxes axis;
+            var positive = true;
+            ServoCatFirmwareAxisConfig axisConfig;
+            if (directionValue == 'N') {
+                axis = TelescopeAxes.axisSecondary;
+                axisConfig = options.FirmwareConfig.AltitudeConfig;
+            } else if (directionValue == 'S') {
+                axis = TelescopeAxes.axisSecondary;
+                positive = false;
+                axisConfig = options.FirmwareConfig.AltitudeConfig;
+            } else if (directionValue == 'E') {
+                axis = TelescopeAxes.axisPrimary;
+                axisConfig = options.FirmwareConfig.AzimuthConfig;
+            } else if (directionValue == 'W') {
+                axis = TelescopeAxes.axisPrimary;
+                positive = false;
+                axisConfig = options.FirmwareConfig.AzimuthConfig;
+            } else {
+                logger.LogMessage("MoveRequest", $"Failed - Unexpected direction {directionValue}");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'X' });
+                return;
+            }
+
+            var rateValue = request[2];
+            if (rateValue < 0 || rateValue > 4) {
+                logger.LogMessage("MoveRequest", $"Failed - Unexpected rate {rateValue}");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'X' });
+                return;
+            }
+
+            double[] rates;
+            if (options.UseSpeed1) {
+                rates = new double[] { 0.0d, axisConfig.GuideRatePerSecond1.Degrees / 2.0d, axisConfig.GuideRatePerSecond1.Degrees, axisConfig.JogRatePerSecond1.Degrees, axisConfig.SlewRatePerSecond1.Degrees };
+            } else {
+                rates = new double[] { 0.0d, axisConfig.GuideRatePerSecond2.Degrees / 2.0d, axisConfig.GuideRatePerSecond2.Degrees, axisConfig.JogRatePerSecond2.Degrees, axisConfig.SlewRatePerSecond2.Degrees };
+            }
+
+            var rate = positive ? rates[rateValue] : -rates[rateValue];
+            simulatorTelescope.MoveAxis(axis, rate);
+
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await WriteResponse(new byte[] { (byte)'M' });
         }
 
         private async Task GotoExtendedPrecisionRequest(byte[] request) {
@@ -264,7 +321,8 @@ namespace ASCOM.ghilios.ServoCAT.IO {
         private async Task Park() {
             var success = false;
             try {
-                simulatorTelescope.Park();
+                // SC doesn't wait for park to complete before returning
+                _ = Task.Run(() => simulatorTelescope.Park());
                 success = true;
             } catch (Exception) {
             }
