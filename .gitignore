@@ -1,6 +1,8 @@
 # Exclude nuget.exe
 /publish/nuget.exe
 
+UpgradeLog.htm
+
 # User-specific files
 *.rsuser
 *.user

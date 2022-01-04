@@ -532,8 +532,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public bool DoesRefraction {
             get {
+                return true;
+                /*
                 Logger.LogMessage("DoesRefraction Get", "Not implemented");
                 throw new PropertyNotImplementedException("DoesRefraction", false);
+                */
             }
             set {
                 Logger.LogMessage("DoesRefraction Set", "Not implemented");

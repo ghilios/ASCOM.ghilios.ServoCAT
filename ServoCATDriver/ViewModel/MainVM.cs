@@ -85,7 +85,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
 
             Logger.LogMessage("MainVM", $"OnDisconnected - {clientGuid}, {connectionCount} connections remaining");
             if ((SharedState.StartedByCOM && connectionCount == 0)
-                || (!SharedState.StartedByCOM && connectionCount <= 1)) {
+                || (!SharedState.StartedByCOM && connectionCount <= 1 && !ConnectedDirectly)) {
                 // Last disconnection, so stop polling
                 try {
                     StopPolling();
@@ -111,7 +111,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             }
 
             Logger.LogMessage("MainVM", $"OnConnected - {clientGuid}, {connectionCount} connections");
-            if (connectionCount == 1) {
+            if (connectionCount > 0 && !Connected) {
                 // First connection, so start polling
                 ConnectAndStartPolling();
             }
@@ -197,6 +197,8 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                     await Task.Delay(ServoCatOptions.MainWindowPollInterval, ct);
                 }
             } catch (TaskCanceledException) {
+                Logger.LogMessage("MainVM.ConnectAndPoll", $"Terminated");
+            } catch (OperationCanceledException) {
                 Logger.LogMessage("MainVM.ConnectAndPoll", $"Terminated");
             } catch (Exception e) {
                 Logger.LogMessageCrLf("MainVM.ConnectAndPoll", $"Failed - {e}");

@@ -70,6 +70,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
 
                     if (activeConnection != null) {
                         success = !client.Connected;
+                        client.Connected = true;
                         return activeConnection;
                     }
 
@@ -139,13 +140,10 @@ namespace ASCOM.ghilios.ServoCAT.IO {
         }
 
         private async Task DisconnectClient(ClientInfo client, CancellationToken ct) {
-            // Intentionally ignore if the client is already not connected, in case a failure takes place during connection
-            /*
             if (!client.Connected) {
                 logger.LogMessage("DriverConnectionManager.DisconnectClient", $"Client {client.Guid} isn't connected. No-op");
                 return;
             }
-            */
 
             var numConnections = registeredClients.Count(c => c.Connected);
             logger.LogMessage("DriverConnectionManager.DisconnectClient", $"Disconnecting client {client.Guid}. {numConnections} remaining beforehand");
