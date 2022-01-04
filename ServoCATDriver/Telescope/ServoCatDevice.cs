@@ -216,7 +216,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 var absDec = coordinates.Dec.ToAbsolute();
                 var command = FormattableString.Invariant($"G{coordinates.RA.Hours:00.00000} {sign}{absDec.Degrees:00.0000}");
                 var commandBytes = new byte[command.Length + 1];
-                Encoding.ASCII.GetBytes(command, 0, command.Length - 1, commandBytes, 0);
+                Encoding.ASCII.GetBytes(command, 0, command.Length, commandBytes, 0);
                 commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, commandBytes.Length - 2);
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse(commandBytes, 1, ct);

@@ -626,7 +626,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 moveRate = SlewRate.SLEW;
             } else {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) Failed - no configured guide rates matched");
-                throw new InvalidValueException($"");
+                throw new InvalidValueException($"{axis} does not supported a move rate of {rate}");
             }
 
             var result = DeviceActionWithTimeout((ct) => {

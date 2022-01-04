@@ -33,7 +33,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
     [ClassInterface(ClassInterfaceType.None)]
     [ComVisible(true)]
     public class Rate : IRate {
-        public static double RateEpsilon = 1.0d / 3600.0d; // 1 arcsecond / sec
+        public static double RateEpsilon = 1.0d / 60.0d; // 1 arcmin / sec
 
         private double maximum = 0;
         private double minimum = 0;
