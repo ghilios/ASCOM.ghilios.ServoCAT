@@ -17,6 +17,7 @@ using ASCOM.Utilities;
 using Ninject;
 using Nito.AsyncEx;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -36,6 +37,10 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             this.ServoCatDevice = servoCatDevice;
             this.ServoCatOptions = servoCatOptions;
             this.AvailableCOMPorts = serialUtilities.GetAvailableCOMPorts();
+            if (String.IsNullOrEmpty(ServoCatOptions.SerialPort) && ServoCatOptions.ConnectionType == ConnectionType.Serial) {
+                ServoCatOptions.SerialPort = AvailableCOMPorts.FirstOrDefault();
+            }
+
             this.logger = logger;
             this.ReloadFirmwareConfigCommand = new RelayCommand(ReloadFirmwareConfig);
         }

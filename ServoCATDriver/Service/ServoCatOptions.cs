@@ -41,7 +41,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             Elevation = ascomProfile.GetDouble(driverId, "elevation", astrometrySettingKey, 0.0d);
             SerialPort = ascomProfile.GetString(driverId, "serialPort", connectionSettingsKey, null);
             UseJ2000 = ascomProfile.GetBool(driverId, "useJ2000", astrometrySettingKey, false);
-            ConnectionType = ascomProfile.GetEnum(driverId, "connectionType", connectionSettingsKey, ConnectionType.Simulator);
+            ConnectionType = ascomProfile.GetEnum(driverId, "connectionType", connectionSettingsKey, ConnectionType.Serial);
             var simulatorFirmwareVersion = ascomProfile.GetInt32(driverId, "simulatorFirmwareVersion", connectionSettingsKey, 61);
             var simulatorFirmwareSubVersion = ascomProfile.GetString(driverId, "simulatorFirmwareSubVersion", connectionSettingsKey, "C");
             if (simulatorFirmwareVersion < 61 || simulatorFirmwareVersion >= 100 || simulatorFirmwareSubVersion.Length != 1) {

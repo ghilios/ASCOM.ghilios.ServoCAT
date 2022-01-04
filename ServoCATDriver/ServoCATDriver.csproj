@@ -308,6 +308,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Resources\StaticResources\SVGDictionary.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Resources\StaticResources\ValidationRules.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
