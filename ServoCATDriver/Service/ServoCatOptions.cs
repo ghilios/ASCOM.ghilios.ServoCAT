@@ -134,6 +134,10 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             this.SimulatorAligned = servoCatOptions.SimulatorAligned;
             this.FirmwareConfigLoaded = servoCatOptions.FirmwareConfigLoaded;
             this.FirmwareConfig.CopyFrom(servoCatOptions.FirmwareConfig);
+            this.UseSpeed1 = servoCatOptions.UseSpeed1;
+            this.EnableServerLogging = servoCatOptions.EnableServerLogging;
+            this.EnableTelescopeLogging = servoCatOptions.EnableTelescopeLogging;
+            this.EnableSerialLogging = servoCatOptions.EnableSerialLogging;
         }
 
         public IServoCatOptions Clone() {

@@ -380,7 +380,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 EnsureChannelOpen();
                 await channel.FlushReadExisting(ct);
 
-                var commandBytes = new byte[] { (byte)'M', (byte)direction, (byte)rate, 0 };
+                var commandBytes = new byte[] { (byte)'M', (byte)direction, (byte)((byte)rate + '0'), 0 };
                 commandBytes[3] = (byte)(commandBytes[1] ^ commandBytes[2]);
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse(commandBytes, 1, ct);
