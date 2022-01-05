@@ -39,7 +39,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 return new SimulatorChannel(options, astrometryConverter, telescopeLogger);
             } else if (options.ConnectionType == ConnectionType.Serial) {
                 var serialConfig = SerialChannelConfig.CreateDefaultConfig(options.SerialPort);
-                return new SerialChannel(serialConfig, serialLogger);
+                return new SerialChannel(serialConfig, options, serialLogger);
             } else {
                 throw new NotImplementedException();
             }

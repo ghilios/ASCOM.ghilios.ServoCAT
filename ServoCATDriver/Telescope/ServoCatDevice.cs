@@ -102,9 +102,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<ICRSCoordinates> GetCoordinates(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "GetCoordinates - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 var response = await SendCommandFixedResponse(new byte[] { 0x0D }, 16, ct);
                 EnsureCharacter(response, ' ', 0);
@@ -134,9 +138,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         private async Task<ExtendedStatusResult> GetExtendedStatusImpl(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "GetExtendedStatus - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 var response = await SendCommandFixedResponse(new byte[] { 0x0E }, 20, ct);
                 var expectedXor = response[19];
@@ -167,9 +175,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<FirmwareVersion> GetVersion(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "GetVersion - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 // Pre-6.1 the v command won't return anything, so if we don't get a response within 1 second treat it as version 60._
                 var response = await SendCommandMaybeFixedResponse("v", 5, ct, TimeSpan.FromSeconds(1));
@@ -189,9 +201,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> GotoLegacy(ICRSCoordinates coordinates, CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", $"GotoLegacy({coordinates}) - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 var sign = coordinates.Dec.NonNegative ? "+" : "-";
                 var absDec = coordinates.Dec.ToAbsolute();
@@ -211,9 +227,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> GotoExtendedPrecision(ICRSCoordinates coordinates, CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", $"GotoExtendedPrecision({coordinates}) - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 var sign = coordinates.Dec.NonNegative ? "+" : "-";
                 var absDec = coordinates.Dec.ToAbsolute();
@@ -233,9 +253,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> AbortMove(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "AbortMove - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 var command = "G99.99999 +99.9999";
                 var commandBytes = new byte[command.Length + 1];
@@ -256,9 +280,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> EnableTracking(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "EnableTracking - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse("RI", 1, ct);
@@ -273,9 +301,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> DisableTracking(Axis axis, CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", $"DisableTracking({axis}) - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 string command;
                 if (axis == Axis.ALT) {
@@ -302,9 +334,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> Park(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "Park - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse("P", 1, ct);
@@ -317,9 +353,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> Unpark(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "Unpark - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse("p", 1, ct);
@@ -332,9 +372,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<bool> Move(Direction direction, SlewRate rate, CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", $"Move({direction}, {rate}) - Begin");
+            }
+
             using (await singleRequestMutex.LockAsync(ct)) {
                 EnsureChannelOpen();
-                channel.FlushReadExisting();
+                await channel.FlushReadExisting(ct);
 
                 var commandBytes = new byte[] { (byte)'M', (byte)direction, (byte)rate, 0 };
                 commandBytes[3] = (byte)(commandBytes[1] ^ commandBytes[2]);
@@ -366,8 +410,12 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public async Task<ServoCatFirmwareConfig> GetConfig(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ServoCatDevice", "GetConfig - Begin");
+            }
+
             EnsureChannelOpen();
-            channel.FlushReadExisting();
+            await channel.FlushReadExisting(ct);
 
             var response = await SendCommandFixedResponse("D", 118, ct);
             using (var ms = new MemoryStream(response, false)) {

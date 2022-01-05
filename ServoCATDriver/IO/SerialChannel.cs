@@ -16,6 +16,7 @@ using Ninject;
 using PostSharp.Patterns.Model;
 using RJCP.IO.Ports;
 using System;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,13 +58,16 @@ namespace ASCOM.ghilios.ServoCAT.IO {
 
     public class SerialChannel : IChannel {
         private readonly SerialChannelConfig config;
+        private readonly IServoCatOptions options;
         private readonly SerialPortStream serialPort;
         private readonly TraceLogger serialLogger;
 
         public SerialChannel(
             SerialChannelConfig config,
+            IServoCatOptions options,
             [Named("Serial")] TraceLogger serialLogger) {
             this.config = config;
+            this.options = options;
             this.serialPort = config.CreateSerialPort();
             this.serialLogger = serialLogger;
         }
@@ -72,7 +76,14 @@ namespace ASCOM.ghilios.ServoCAT.IO {
 
         public async Task Open(CancellationToken ct) {
             if (serialPort.IsOpen) {
+                if (options.EnableSerialLogging) {
+                    serialLogger.LogMessage("Open", $"Channel already open");
+                }
                 return;
+            }
+
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("Open", $"Opening channel");
             }
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -85,7 +96,14 @@ namespace ASCOM.ghilios.ServoCAT.IO {
 
         public async Task Close(CancellationToken ct) {
             if (!serialPort.IsOpen) {
+                if (options.EnableSerialLogging) {
+                    serialLogger.LogMessage("Close", $"Channel already closed");
+                }
                 return;
+            }
+
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("Close", $"Closing channel");
             }
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -96,16 +114,41 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             }
         }
 
-        public Task<byte[]> ReadBytes(int byteCount, CancellationToken ct) {
-            return serialPort.ReadAsync(byteCount, ct);
+        public async Task<byte[]> ReadBytes(int byteCount, CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                serialLogger.LogMessage("ReadBytes", $"Begin reading {byteCount} bytes");
+            }
+            var data = await serialPort.ReadAsync(byteCount, ct);
+            if (options.EnableSerialLogging) {
+                var dataString = BitConverter.ToString(data);
+                var dataASCIIString = Encoding.ASCII.GetString(data);
+                serialLogger.LogMessage("ReadBytes", $"Read {data.Length} bytes. {dataString} = {dataASCIIString}");
+            }
+            return data;
         }
 
         public async Task Write(byte[] data, CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                var dataString = BitConverter.ToString(data);
+                var dataASCIIString = Encoding.ASCII.GetString(data);
+                serialLogger.LogMessage("Write", $"Writing {data.Length} bytes. {dataString} = {dataASCIIString}");
+            }
+
             await serialPort.WriteAsync(data, 0, data.Length, ct);
             await serialPort.FlushAsync(ct);
         }
 
-        public void FlushReadExisting() {
+        public async Task FlushReadExisting(CancellationToken ct) {
+            if (options.EnableSerialLogging) {
+                var bytesInBuffer = serialPort.BytesToRead;
+                if (bytesInBuffer > 0) {
+                    var discardBuffer = new byte[bytesInBuffer];
+                    var bytesRead = await serialPort.ReadAsync(discardBuffer, 0, bytesInBuffer, ct);
+                    var discardBufferString = BitConverter.ToString(discardBuffer);
+                    var discardBufferASCIIString = Encoding.ASCII.GetString(discardBuffer);
+                    serialLogger.LogMessage("FlushReadExisting", $"Discarded {bytesRead} bytes. {discardBufferString} = {discardBufferASCIIString}");
+                }
+            }
             serialPort.DiscardInBuffer();
         }
     }
