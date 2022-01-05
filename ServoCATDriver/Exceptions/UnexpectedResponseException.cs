@@ -15,12 +15,18 @@ using System.Text;
 
 namespace ASCOM.ghilios.ServoCAT.Exceptions {
 
+    public class XORValidationFailedException : UnexpectedResponseException {
+
+        public XORValidationFailedException(string message) : base(message) {
+        }
+    }
+
     public class UnexpectedResponseException : Exception {
 
         public UnexpectedResponseException(string message) : base(message) {
         }
 
-        private static string ResponseEpilogue(byte[] response) {
+        protected static string ResponseEpilogue(byte[] response) {
             return $"{Environment.NewLine}{BitConverter.ToString(response)}{Environment.NewLine}{Encoding.ASCII.GetString(response)}";
         }
 
@@ -36,7 +42,7 @@ namespace ASCOM.ghilios.ServoCAT.Exceptions {
 
         public static UnexpectedResponseException XORValidationFailed(byte[] response, int offset, int length, byte actualXor, byte expectedXor) {
             var msg = $"Failed XOR validation from {offset}, {length} bytes. ExpectedXOR={expectedXor}, ActualXOR={actualXor}.{ResponseEpilogue(response)}";
-            return new UnexpectedResponseException(msg);
+            return new XORValidationFailedException(msg);
         }
     }
 }

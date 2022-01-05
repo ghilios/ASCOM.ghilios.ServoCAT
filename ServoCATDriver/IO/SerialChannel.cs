@@ -14,8 +14,8 @@ using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.Utilities;
 using Ninject;
 using PostSharp.Patterns.Model;
-using RJCP.IO.Ports;
 using System;
+using System.IO.Ports;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,25 +41,29 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 DataBits = 8,
                 StopBits = StopBits.One,
                 Handshake = Handshake.None,
-                ReadTimeout = TimeSpan.FromSeconds(2),
-                WriteTimeout = TimeSpan.FromSeconds(2)
+                ReadTimeout = TimeSpan.FromSeconds(1),
+                WriteTimeout = TimeSpan.FromSeconds(1)
             };
         }
 
-        public SerialPortStream CreateSerialPort() {
-            return new SerialPortStream(
-                PortName,
-                BaudRate,
-                DataBits,
-                Parity,
-                StopBits);
+        public SerialPort CreateSerialPort() {
+            return new SerialPort() {
+                PortName = PortName,
+                BaudRate = BaudRate,
+                Parity = Parity,
+                DataBits = DataBits,
+                StopBits = StopBits,
+                Handshake = Handshake,
+                ReadTimeout = (int)ReadTimeout.TotalMilliseconds,
+                WriteTimeout = (int)WriteTimeout.TotalMilliseconds,
+            };
         }
     }
 
     public class SerialChannel : IChannel {
         private readonly SerialChannelConfig config;
         private readonly IServoCatOptions options;
-        private readonly SerialPortStream serialPort;
+        private readonly SerialPort serialPort;
         private readonly TraceLogger serialLogger;
 
         public SerialChannel(
@@ -118,7 +122,8 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ReadBytes", $"Begin reading {byteCount} bytes");
             }
-            var data = await serialPort.ReadAsync(byteCount, ct);
+
+            var data = await serialPort.ReadSynchronous(byteCount, ct);
             if (options.EnableSerialLogging) {
                 var dataString = BitConverter.ToString(data);
                 var dataASCIIString = Encoding.ASCII.GetString(data);
@@ -134,19 +139,17 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 serialLogger.LogMessage("Write", $"Writing {data.Length} bytes. {dataString} = {dataASCIIString}");
             }
 
-            await serialPort.WriteAsync(data, 0, data.Length, ct);
-            await serialPort.FlushAsync(ct);
+            await serialPort.WriteSynchronous(data, 0, data.Length, ct);
         }
 
         public async Task FlushReadExisting(CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 var bytesInBuffer = serialPort.BytesToRead;
                 if (bytesInBuffer > 0) {
-                    var discardBuffer = new byte[bytesInBuffer];
-                    var bytesRead = await serialPort.ReadAsync(discardBuffer, 0, bytesInBuffer, ct);
+                    var discardBuffer = await serialPort.ReadSynchronous(bytesInBuffer, ct);
                     var discardBufferString = BitConverter.ToString(discardBuffer);
                     var discardBufferASCIIString = Encoding.ASCII.GetString(discardBuffer);
-                    serialLogger.LogMessage("FlushReadExisting", $"Discarded {bytesRead} bytes. {discardBufferString} = {discardBufferASCIIString}");
+                    serialLogger.LogMessage("FlushReadExisting", $"Discarded {bytesInBuffer} bytes. {discardBufferString} = {discardBufferASCIIString}");
                 }
             }
             serialPort.DiscardInBuffer();

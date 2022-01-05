@@ -97,11 +97,37 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
 
             if (!channel.IsOpen) {
+                RaisePropertyChanged(nameof(IsConnected));
                 throw new Exception("Device channel is closed unexpectedly");
             }
         }
 
-        public async Task<ICRSCoordinates> GetCoordinates(CancellationToken ct) {
+        private async Task<T> DoWithRetries<T>(Func<Task<T>> op, CancellationToken ct) {
+            // TODO: Consider making this a configurable option
+            const int retries = 3;
+            int attemptsRemaining = retries;
+
+            while (true) {
+                ct.ThrowIfCancellationRequested();
+                try {
+                    return await op();
+                } catch (UnexpectedResponseException e) {
+                    --attemptsRemaining;
+                    serialLogger.LogMessage("DoWithRetries", $"Operation failed with {attemptsRemaining} attempts remaining. Unexpected response: {e}.");
+                    if (attemptsRemaining == 0) {
+                        throw;
+                    } else {
+                        await Task.Delay(100, ct);
+                    }
+                }
+            }
+        }
+
+        public Task<ICRSCoordinates> GetCoordinates(CancellationToken ct) {
+            return DoWithRetries(() => GetCoordinatesImpl(ct), ct);
+        }
+
+        private async Task<ICRSCoordinates> GetCoordinatesImpl(CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", "GetCoordinates - Begin");
             }
@@ -129,10 +155,9 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public Task<ExtendedStatusResult> GetExtendedStatus(CancellationToken ct) {
-            // Make sure this isn't called more often than every 0.5 seconds
             return this.extendedStatusCache.GetOrAddAsync(
                 "",
-                () => GetExtendedStatusImpl(ct),
+                () => DoWithRetries(() => GetExtendedStatusImpl(ct), ct),
                 options.TelescopeStatusCacheTTL,
                 ct);
         }
@@ -174,7 +199,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<FirmwareVersion> GetVersion(CancellationToken ct) {
+        public Task<FirmwareVersion> GetVersion(CancellationToken ct) {
+            return DoWithRetries(() => GetVersionImpl(ct), ct);
+        }
+
+        private async Task<FirmwareVersion> GetVersionImpl(CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", "GetVersion - Begin");
             }
@@ -200,7 +229,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> GotoLegacy(ICRSCoordinates coordinates, CancellationToken ct) {
+        public Task<bool> GotoLegacy(ICRSCoordinates coordinates, CancellationToken ct) {
+            return DoWithRetries(() => GotoLegacyImpl(coordinates, ct), ct);
+        }
+
+        private async Task<bool> GotoLegacyImpl(ICRSCoordinates coordinates, CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", $"GotoLegacy({coordinates}) - Begin");
             }
@@ -218,7 +251,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse(commandBytes, 1, ct);
                     // The spec calls for a 'G' response for success, and 'X' for failure
-                    return response[0] == 'G';
+                    if (response[0] == 'G') {
+                        return true;
+                    } else if (response[0] == 'X') {
+                        return false;
+                    } else {
+                        throw UnexpectedResponseException.ExpectedByteInResponse(response, "G or X", 0);
+                    }
                 } else {
                     await SendCommandNoResponse(commandBytes, ct);
                     return true;
@@ -226,7 +265,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> GotoExtendedPrecision(ICRSCoordinates coordinates, CancellationToken ct) {
+        public Task<bool> GotoExtendedPrecision(ICRSCoordinates coordinates, CancellationToken ct) {
+            return DoWithRetries(() => GotoExtendedPrecisionImpl(coordinates, ct), ct);
+        }
+
+        private async Task<bool> GotoExtendedPrecisionImpl(ICRSCoordinates coordinates, CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", $"GotoExtendedPrecision({coordinates}) - Begin");
             }
@@ -244,7 +287,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse(commandBytes, 1, ct);
                     // The spec calls for a 'G' response for success, and 'X' for failure
-                    return response[0] == 'G';
+                    if (response[0] == 'G') {
+                        return true;
+                    } else if (response[0] == 'X') {
+                        return false;
+                    } else {
+                        throw UnexpectedResponseException.ExpectedByteInResponse(response, "G or X", 0);
+                    }
                 } else {
                     await SendCommandNoResponse(commandBytes, ct);
                     return true;
@@ -252,7 +301,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> AbortMove(CancellationToken ct) {
+        public Task<bool> AbortMove(CancellationToken ct) {
+            return DoWithRetries(() => AbortMoveImpl(ct), ct);
+        }
+
+        private async Task<bool> AbortMoveImpl(CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", "AbortMove - Begin");
             }
@@ -267,10 +320,9 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 commandBytes[commandBytes.Length - 1] = XORResponse(commandBytes, 1, commandBytes.Length - 2);
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse(commandBytes, 1, ct);
-                    // The spec calls for a 'X' response, but we will ignore it
+                    // The spec calls for a 'X' response
                     if (response[0] != 'X') {
-                        logger.LogMessage("AbortMove", $"Received {(char)response[0]} instead of X. Ignoring and moving on");
-                        return false;
+                        throw UnexpectedResponseException.ExpectedByteInResponse(response, "X", 0);
                     }
                 } else {
                     await SendCommandNoResponse(commandBytes, ct);
@@ -279,7 +331,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> EnableTracking(CancellationToken ct) {
+        public Task<bool> EnableTracking(CancellationToken ct) {
+            return DoWithRetries(() => EnableTrackingImpl(ct), ct);
+        }
+
+        private async Task<bool> EnableTrackingImpl(CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", "EnableTracking - Begin");
             }
@@ -300,7 +356,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> DisableTracking(Axis axis, CancellationToken ct) {
+        public Task<bool> DisableTracking(Axis axis, CancellationToken ct) {
+            return DoWithRetries(() => DisableTrackingImpl(axis, ct), ct);
+        }
+
+        private async Task<bool> DisableTrackingImpl(Axis axis, CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", $"DisableTracking({axis}) - Begin");
             }
@@ -333,7 +393,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> Park(CancellationToken ct) {
+        public Task<bool> Park(CancellationToken ct) {
+            return DoWithRetries(() => ParkImpl(ct), ct);
+        }
+
+        private async Task<bool> ParkImpl(CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", "Park - Begin");
             }
@@ -352,7 +416,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> Unpark(CancellationToken ct) {
+        public Task<bool> Unpark(CancellationToken ct) {
+            return DoWithRetries(() => UnparkImpl(ct), ct);
+        }
+
+        private async Task<bool> UnparkImpl(CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", "Unpark - Begin");
             }
@@ -371,7 +439,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
         }
 
-        public async Task<bool> Move(Direction direction, SlewRate rate, CancellationToken ct) {
+        public Task<bool> Move(Direction direction, SlewRate rate, CancellationToken ct) {
+            return DoWithRetries(() => MoveImpl(direction, rate, ct), ct);
+        }
+
+        private async Task<bool> MoveImpl(Direction direction, SlewRate rate, CancellationToken ct) {
             if (options.EnableSerialLogging) {
                 serialLogger.LogMessage("ServoCatDevice", $"Move({direction}, {rate}) - Begin");
             }
@@ -385,7 +457,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 if (firmwareVersion.Version > 60) {
                     var response = await SendCommandFixedResponse(commandBytes, 1, ct);
                     // The spec calls for a 'M' response for success, and 'X' for failure
-                    return response[0] == 'M';
+                    if (response[0] == 'M') {
+                        return true;
+                    } else if (response[0] == 'X') {
+                        return false;
+                    } else {
+                        throw UnexpectedResponseException.ExpectedByteInResponse(response, "M or X", 0);
+                    }
                 } else {
                     await SendCommandNoResponse(commandBytes, ct);
                     return true;

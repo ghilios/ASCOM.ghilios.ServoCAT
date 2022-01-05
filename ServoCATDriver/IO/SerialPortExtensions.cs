@@ -12,7 +12,6 @@
 
 using System.IO;
 using System.IO.Ports;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -47,8 +46,49 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             return buffer;
         }
 
+        public static async Task<byte[]> ReadSynchronous(this SerialPort serialPort, int count, CancellationToken ct = default) {
+            var bytesToRead = count;
+            int totalBytesRead = 0;
+            var buffer = new byte[count];
+
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (ct.Register(() => tcs.SetCanceled())) {
+                var closeTask = Task.Run(() => serialPort.Close(), ct);
+                await Task.WhenAny(tcs.Task, closeTask);
+                ct.ThrowIfCancellationRequested();
+
+                while (bytesToRead > 0) {
+                    ct.ThrowIfCancellationRequested();
+                    if (!serialPort.IsOpen) {
+                        throw new EndOfStreamException();
+                    }
+
+                    var readTask = Task.Run(() => serialPort.Read(buffer, totalBytesRead, bytesToRead), ct);
+                    await Task.WhenAny(tcs.Task, readTask);
+                    ct.ThrowIfCancellationRequested();
+
+                    var readBytes = await readTask;
+                    if (readBytes == 0) {
+                        throw new EndOfStreamException();
+                    }
+                    bytesToRead -= readBytes;
+                    totalBytesRead += readBytes;
+                }
+            }
+            return buffer;
+        }
+
         public static Task WriteAsync(this SerialPort serialPort, byte[] buffer, int offset, int count, CancellationToken ct = default) {
             return serialPort.BaseStream.WriteAsync(buffer, offset, count, ct);
+        }
+
+        public static async Task WriteSynchronous(this SerialPort serialPort, byte[] buffer, int offset, int count, CancellationToken ct = default) {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (ct.Register(() => tcs.SetCanceled())) {
+                var writeTask = Task.Run(() => serialPort.Write(buffer, offset, count), ct);
+                await Task.WhenAny(tcs.Task, writeTask);
+                ct.ThrowIfCancellationRequested();
+            }
         }
     }
 }
