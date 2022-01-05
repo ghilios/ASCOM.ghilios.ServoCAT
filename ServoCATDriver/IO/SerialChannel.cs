@@ -98,10 +98,6 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             return serialPort.ReadAsync(byteCount, ct);
         }
 
-        public Task<byte[]> ReadUntil(string terminator, CancellationToken ct) {
-            return serialPort.ReadToAsync(terminator, ct);
-        }
-
         public Task Write(byte[] data, CancellationToken ct) {
             return serialPort.WriteAsync(data, 0, data.Length, ct);
         }

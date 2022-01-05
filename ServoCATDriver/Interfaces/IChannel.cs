@@ -27,7 +27,5 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         Task Write(byte[] data, CancellationToken ct);
 
         Task<byte[]> ReadBytes(int byteCount, CancellationToken ct);
-
-        Task<byte[]> ReadUntil(string terminator, CancellationToken ct);
     }
 }
