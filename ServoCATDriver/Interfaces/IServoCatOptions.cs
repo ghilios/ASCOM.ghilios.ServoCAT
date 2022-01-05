@@ -48,5 +48,8 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         bool FirmwareConfigLoaded { get; set; }
         ServoCatFirmwareConfig FirmwareConfig { get; }
         bool UseSpeed1 { get; set; }
+        bool EnableServerLogging { get; set; }
+        bool EnableTelescopeLogging { get; set; }
+        bool EnableSerialLogging { get; set; }
     }
 }

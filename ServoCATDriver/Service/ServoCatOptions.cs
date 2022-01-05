@@ -51,7 +51,10 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             }
             SimulatorAligned = ascomProfile.GetBool(driverId, "simulatorAligned", connectionSettingsKey, true);
             FirmwareConfigLoaded = ascomProfile.GetBool(driverId, "firmwareConfigLoaded", connectionSettingsKey, false);
-            UseSpeed1 = ascomProfile.GetBool(driverId, "useSpeed1", astrometrySettingKey, true);
+            UseSpeed1 = ascomProfile.GetBool(driverId, "useSpeed1", connectionSettingsKey, true);
+            EnableServerLogging = ascomProfile.GetBool(driverId, "enableServerLogging", connectionSettingsKey, true);
+            EnableTelescopeLogging = ascomProfile.GetBool(driverId, "enableTelescopeLogging", connectionSettingsKey, true);
+            EnableSerialLogging = ascomProfile.GetBool(driverId, "enableSerialLogging", connectionSettingsKey, true);
             LoadFirmwareConfig();
         }
 
@@ -67,6 +70,9 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ascomProfile.WriteBool(driverId, "simulatorAligned", connectionSettingsKey, SimulatorAligned);
             ascomProfile.WriteBool(driverId, "firmwareConfigLoaded", connectionSettingsKey, FirmwareConfigLoaded);
             ascomProfile.WriteBool(driverId, "useSpeed1", connectionSettingsKey, UseSpeed1);
+            ascomProfile.WriteBool(driverId, "enableServerLogging", connectionSettingsKey, EnableServerLogging);
+            ascomProfile.WriteBool(driverId, "enableTelescopeLogging", connectionSettingsKey, EnableTelescopeLogging);
+            ascomProfile.WriteBool(driverId, "enableSerialLogging", connectionSettingsKey, EnableSerialLogging);
             SaveFirmwareConfig();
         }
 
@@ -156,5 +162,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public ServoCatFirmwareConfig FirmwareConfig { get; } = new ServoCatFirmwareConfig();
 
         public bool UseSpeed1 { get; set; }
+        public bool EnableServerLogging { get; set; }
+        public bool EnableTelescopeLogging { get; set; }
+        public bool EnableSerialLogging { get; set; }
     }
 }

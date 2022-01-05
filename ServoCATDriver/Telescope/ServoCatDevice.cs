@@ -28,6 +28,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
     public class ServoCatDevice : BaseINPC, IServoCatDevice, IDisposable {
         private IChannel channel;
         private readonly TraceLogger logger;
+        private readonly TraceLogger serialLogger;
         private readonly IServoCatOptions options;
         private readonly AstrometryConverter astrometryConverter;
         private readonly ISharedState sharedState;
@@ -41,11 +42,13 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             IMicroCacheFactory microCacheFactory,
             AstrometryConverter astrometryConverter,
             ISharedState sharedState,
-            [Named("Telescope")] TraceLogger logger) {
+            [Named("Telescope")] TraceLogger logger,
+            [Named("Serial")] TraceLogger serialLogger) {
             this.options = options;
             this.astrometryConverter = astrometryConverter;
             this.sharedState = sharedState;
             this.logger = logger;
+            this.serialLogger = serialLogger;
             this.extendedStatusCache = microCacheFactory.Create<ExtendedStatusResult>();
         }
 

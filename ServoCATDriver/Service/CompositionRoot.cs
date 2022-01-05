@@ -42,6 +42,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             Bind<IMainVM>().To<MainVM>().InSingletonScope();
             Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("", "ghilios.ServoCAT.Server")).InSingletonScope().Named("Server");
             Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("", "ghilios.ServoCAT.Telescope")).InSingletonScope().Named("Telescope");
+            Bind<TraceLogger>().ToConstructor(ctorArg => new TraceLogger("", "ghilios.ServoCAT.Serial")).InSingletonScope().Named("Serial");
             Bind<IAstroUtils>().To<AstroUtils>().InSingletonScope();
             Bind<ISOFA>().To<SOFA>().InSingletonScope();
             Bind<INOVAS31>().To<NOVAS31>().InSingletonScope();

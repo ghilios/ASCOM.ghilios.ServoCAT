@@ -11,9 +11,11 @@
 #endregion "copyright"
 
 using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.Utilities;
+using Ninject;
 using PostSharp.Patterns.Model;
+using RJCP.IO.Ports;
 using System;
-using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,27 +45,27 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             };
         }
 
-        public SerialPort CreateSerialPort() {
-            return new SerialPort() {
-                PortName = PortName,
-                BaudRate = BaudRate,
-                Parity = Parity,
-                DataBits = DataBits,
-                StopBits = StopBits,
-                Handshake = Handshake,
-                ReadTimeout = (int)ReadTimeout.TotalMilliseconds,
-                WriteTimeout = (int)WriteTimeout.TotalMilliseconds,
-            };
+        public SerialPortStream CreateSerialPort() {
+            return new SerialPortStream(
+                PortName,
+                BaudRate,
+                DataBits,
+                Parity,
+                StopBits);
         }
     }
 
     public class SerialChannel : IChannel {
         private readonly SerialChannelConfig config;
-        private readonly SerialPort serialPort;
+        private readonly SerialPortStream serialPort;
+        private readonly TraceLogger serialLogger;
 
-        public SerialChannel(SerialChannelConfig config) {
+        public SerialChannel(
+            SerialChannelConfig config,
+            [Named("Serial")] TraceLogger serialLogger) {
             this.config = config;
             this.serialPort = config.CreateSerialPort();
+            this.serialLogger = serialLogger;
         }
 
         public bool IsOpen => serialPort.IsOpen;
@@ -98,12 +100,13 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             return serialPort.ReadAsync(byteCount, ct);
         }
 
-        public Task Write(byte[] data, CancellationToken ct) {
-            return serialPort.WriteAsync(data, 0, data.Length, ct);
+        public async Task Write(byte[] data, CancellationToken ct) {
+            await serialPort.WriteAsync(data, 0, data.Length, ct);
+            await serialPort.FlushAsync(ct);
         }
 
         public void FlushReadExisting() {
-            serialPort.ReadExisting();
+            serialPort.DiscardInBuffer();
         }
     }
 }

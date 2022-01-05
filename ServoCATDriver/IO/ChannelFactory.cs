@@ -20,20 +20,26 @@ namespace ASCOM.ghilios.ServoCAT.IO {
     public class ChannelFactory : IChannelFactory {
         private readonly IServoCatOptions options;
         private readonly AstrometryConverter astrometryConverter;
-        private readonly TraceLogger logger;
+        private readonly TraceLogger telescopeLogger;
+        private readonly TraceLogger serialLogger;
 
-        public ChannelFactory(IServoCatOptions options, AstrometryConverter astrometryConverter, [Named("Telescope")] TraceLogger logger) {
+        public ChannelFactory(
+            IServoCatOptions options,
+            AstrometryConverter astrometryConverter,
+            [Named("Telescope")] TraceLogger telescopeLogger,
+            [Named("Serial")] TraceLogger serialLogger) {
             this.options = options;
             this.astrometryConverter = astrometryConverter;
-            this.logger = logger;
+            this.telescopeLogger = telescopeLogger;
+            this.serialLogger = serialLogger;
         }
 
         public IChannel Create() {
             if (options.ConnectionType == ConnectionType.Simulator) {
-                return new SimulatorChannel(options, astrometryConverter, logger);
+                return new SimulatorChannel(options, astrometryConverter, telescopeLogger);
             } else if (options.ConnectionType == ConnectionType.Serial) {
                 var serialConfig = SerialChannelConfig.CreateDefaultConfig(options.SerialPort);
-                return new SerialChannel(serialConfig);
+                return new SerialChannel(serialConfig, serialLogger);
             } else {
                 throw new NotImplementedException();
             }

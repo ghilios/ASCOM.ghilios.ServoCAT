@@ -20,6 +20,7 @@ using Ninject;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -42,6 +43,10 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         private Main mainWindow;
         private IMainVM mainVM;
         private IDriverConnectionManager driverConnectionManager;
+        private IServoCatOptions servoCatOptions;
+        private TraceLogger ServerLogger;
+        private TraceLogger TelescopeLogger;
+        private TraceLogger SerialLogger;
 
         private readonly object serverLock = new object();
         private Task GCTask;
@@ -55,6 +60,15 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
 
             ServerLogger = CompositionRoot.Kernel.Get<TraceLogger>("Server");
+            TelescopeLogger = CompositionRoot.Kernel.Get<TraceLogger>("Telescope");
+            SerialLogger = CompositionRoot.Kernel.Get<TraceLogger>("Serial");
+            servoCatOptions = CompositionRoot.Kernel.Get<IServoCatOptions>();
+
+            ServerLogger.Enabled = servoCatOptions.EnableServerLogging;
+            TelescopeLogger.Enabled = servoCatOptions.EnableTelescopeLogging;
+            SerialLogger.Enabled = servoCatOptions.EnableSerialLogging;
+            ((INotifyPropertyChanged)servoCatOptions).PropertyChanged += ServoCatOptions_PropertyChanged;
+
             // TODO: Make this configurable
             ServerLogger.Enabled = true;
             ServerLogger.LogMessage("Main", $"ghilios ServoCAT Server started");
@@ -103,6 +117,16 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ServerLogger.LogMessage("Main", $"Starting garbage collection");
             StartGarbageCollection(TimeSpan.FromSeconds(10));
             ServerLogger.LogMessage("Main", $"Garbage collector thread started");
+        }
+
+        private void ServoCatOptions_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+            if (e.PropertyName == nameof(servoCatOptions.EnableServerLogging)) {
+                ServerLogger.Enabled = servoCatOptions.EnableServerLogging;
+            } else if (e.PropertyName == nameof(servoCatOptions.EnableTelescopeLogging)) {
+                TelescopeLogger.Enabled = servoCatOptions.EnableTelescopeLogging;
+            } else if (e.PropertyName == nameof(servoCatOptions.EnableSerialLogging)) {
+                SerialLogger.Enabled = servoCatOptions.EnableSerialLogging;
+            }
         }
 
         public bool StartedByCOM { get; private set; }
@@ -176,8 +200,6 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         }
 
         public static LocalServerApp App => (LocalServerApp)Current;
-
-        public TraceLogger ServerLogger { get; private set; }
 
         #region Command line argument processing
 
