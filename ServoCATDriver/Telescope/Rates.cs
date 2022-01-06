@@ -109,6 +109,8 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             var slewRate = options.UseSpeed1 ? axisConfig.SlewRatePerSecond1 : axisConfig.SlewRatePerSecond2;
             this.axis = axis;
             this.rates = new Rate[] {
+                // TODO: Figure out what "Guide Slow" corresponds to
+                Rate.SingleValue(0),
                 Rate.SingleValue(guideRate.Degrees),
                 Rate.SingleValue(jogRate.Degrees),
                 Rate.SingleValue(slewRate.Degrees)

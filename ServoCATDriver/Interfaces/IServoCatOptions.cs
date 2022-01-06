@@ -51,5 +51,6 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         bool EnableServerLogging { get; set; }
         bool EnableTelescopeLogging { get; set; }
         bool EnableSerialLogging { get; set; }
+        int DeviceUnexpectedResponseRetries { get; }
     }
 }

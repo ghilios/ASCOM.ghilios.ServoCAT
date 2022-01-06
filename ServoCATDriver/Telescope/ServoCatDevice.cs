@@ -93,19 +93,17 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         private void EnsureChannelOpen() {
             if (!initialized) {
-                throw new Exception("Device not initialized. This is a coding error that should be reported to the developer");
+                throw new NotConnectedException("Device not initialized. This is a coding error that should be reported to the developer");
             }
 
             if (!channel.IsOpen) {
                 RaisePropertyChanged(nameof(IsConnected));
-                throw new Exception("Device channel is closed unexpectedly");
+                throw new NotConnectedException("Device channel is closed unexpectedly");
             }
         }
 
         private async Task<T> DoWithRetries<T>(Func<Task<T>> op, CancellationToken ct) {
-            // TODO: Consider making this a configurable option
-            const int retries = 3;
-            int attemptsRemaining = retries;
+            int attemptsRemaining = options.DeviceUnexpectedResponseRetries;
 
             while (true) {
                 ct.ThrowIfCancellationRequested();
@@ -212,12 +210,8 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 EnsureChannelOpen();
                 await channel.FlushReadExisting(ct);
 
-                // Pre-6.1 the v command won't return anything, so if we don't get a response within 1 second treat it as version 60._
-                var response = await SendCommandMaybeFixedResponse("v", 5, ct, TimeSpan.FromSeconds(1));
-                if (response.Length == 0) {
-                    return FirmwareVersion.GetDefault();
-                }
-
+                // Pre-6.1 the v command won't return anything. We will not support such early firmware versions, as we can't reliably run many of the commands
+                var response = await SendCommandFixedResponse("v", 5, ct);
                 var version = (ushort)GetUIntFromRange(response, 0, 2);
                 EnsureCharacter(response, '.', 2);
                 var subVersion = (char)response[3];

@@ -99,9 +99,6 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                     throw new ASCOM.DriverException("DriverDescription is not set");
                 }
 
-                // TODO: Add switch for trace logging
-                logger.Enabled = true;
-
                 this.sharedState = sharedState;
                 this.servoCatOptions = options;
                 this.driverConnectionManager = driverConnectionManager;
@@ -138,9 +135,12 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             try {
                 return AsyncContext.Run<T>(() => op(linkedCts.Token));
-                // TODO: Add DeviceDisconnectedException which we can catch here and trigger a disconnect
-            } catch (EndOfStreamException) {
-                LogMessage("DeviceActionWithTimeout", "Reached end of stream while reading from device. Disconnecting");
+            } catch (NotConnectedException e) {
+                Logger.LogMessageCrLf("DeviceActionWithTimeout", $"Device no longer seems to be connected. Disconnecting. {e}");
+                _ = Task.Run(() => Connected = false);
+                throw;
+            } catch (EndOfStreamException e) {
+                Logger.LogMessageCrLf("DeviceActionWithTimeout", $"Reached end of stream while reading from device. Disconnecting. {e}");
                 _ = Task.Run(() => Connected = false);
                 throw;
             } catch (OperationCanceledException e) {
@@ -1226,7 +1226,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         internal void LogException(string identifier, string message, Exception e) {
             var msg = $"Exception={e.Message}, Message={message}, Details={e}";
-            Logger.LogMessage(identifier, msg);
+            Logger.LogMessageCrLf(identifier, msg);
         }
 
         #endregion

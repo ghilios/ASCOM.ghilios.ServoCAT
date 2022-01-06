@@ -68,9 +68,6 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             TelescopeLogger.Enabled = servoCatOptions.EnableTelescopeLogging;
             SerialLogger.Enabled = servoCatOptions.EnableSerialLogging;
             ((INotifyPropertyChanged)servoCatOptions).PropertyChanged += ServoCatOptions_PropertyChanged;
-
-            // TODO: Make this configurable
-            ServerLogger.Enabled = true;
             ServerLogger.LogMessage("Main", $"ghilios ServoCAT Server started");
 
             // Load driver COM assemblies and get types, ending the program if something goes wrong.

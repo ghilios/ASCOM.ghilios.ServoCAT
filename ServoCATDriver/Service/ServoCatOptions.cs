@@ -161,6 +161,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public TimeSpan MainWindowPollInterval => TimeSpan.FromSeconds(2);
         public TimeSpan TelescopeStatusCacheTTL => TimeSpan.FromMilliseconds(500);
         public TimeSpan DeviceRequestTimeout => TimeSpan.FromSeconds(5);
+        public int DeviceUnexpectedResponseRetries => 3;
         public TimeSpan SlewTimeout => TimeSpan.FromMinutes(1);
         public bool FirmwareConfigLoaded { get; set; }
         public ServoCatFirmwareConfig FirmwareConfig { get; } = new ServoCatFirmwareConfig();
