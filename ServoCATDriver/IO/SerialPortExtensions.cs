@@ -53,10 +53,6 @@ namespace ASCOM.ghilios.ServoCAT.IO {
 
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             using (ct.Register(() => tcs.SetCanceled())) {
-                var closeTask = Task.Run(() => serialPort.Close(), ct);
-                await Task.WhenAny(tcs.Task, closeTask);
-                ct.ThrowIfCancellationRequested();
-
                 while (bytesToRead > 0) {
                     ct.ThrowIfCancellationRequested();
                     if (!serialPort.IsOpen) {

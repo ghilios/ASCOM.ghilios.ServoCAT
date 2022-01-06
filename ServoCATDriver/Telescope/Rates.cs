@@ -63,7 +63,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         internal static Rate SingleValue(double val) {
-            return new Rate(Math.Max(0.0d, val - RateEpsilon), val + RateEpsilon);
+            return new Rate(val, val);
         }
 
         public bool Equals(double val) {

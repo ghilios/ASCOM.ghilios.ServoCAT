@@ -138,6 +138,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             try {
                 return AsyncContext.Run<T>(() => op(linkedCts.Token));
+                // TODO: Add DeviceDisconnectedException which we can catch here and trigger a disconnect
             } catch (EndOfStreamException) {
                 LogMessage("DeviceActionWithTimeout", "Reached end of stream while reading from device. Disconnecting");
                 _ = Task.Run(() => Connected = false);
