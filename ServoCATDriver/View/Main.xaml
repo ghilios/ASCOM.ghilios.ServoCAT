@@ -37,6 +37,7 @@
                     <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
                         <Path
                             Margin="15"
+                            Width="160"
                             Data="{StaticResource ServoCatWithWordsSVG}"
                             Stretch="Uniform" StrokeThickness="0.4" Stroke="Aqua" Fill="Aqua"/>
                     </Grid>
