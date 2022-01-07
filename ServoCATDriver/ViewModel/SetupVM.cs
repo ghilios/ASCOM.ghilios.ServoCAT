@@ -37,7 +37,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             this.ServoCatDevice = servoCatDevice;
             this.ServoCatOptions = servoCatOptions;
             this.AvailableCOMPorts = serialUtilities.GetAvailableCOMPorts();
-            if (String.IsNullOrEmpty(ServoCatOptions.SerialPort) && ServoCatOptions.ConnectionType == ConnectionType.Serial) {
+            if (String.IsNullOrEmpty(ServoCatOptions.SerialPort)) {
                 ServoCatOptions.SerialPort = AvailableCOMPorts.FirstOrDefault();
             }
 
@@ -87,6 +87,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                     Title = "ServoCAT Options",
                     WindowStyle = WindowStyle.ToolWindow
                 };
+
                 win.Owner = mainwindow;
                 win.Closed += (object sender, EventArgs e) => {
                     Application.Current.MainWindow.Focus();

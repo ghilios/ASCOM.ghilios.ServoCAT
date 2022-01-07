@@ -49,7 +49,7 @@
             <Grid Margin="5">
                 <Grid.Resources>
                     <Style x:Key="ShowOnSimulator" TargetType="{x:Type RowDefinition}">
-                        <Setter Property="Height" Value="Auto" />
+                        <Setter Property="Height" Value="0" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ServoCatOptions.ConnectionType}" Value="0">
                                 <Setter Property="Height" Value="Auto" />
@@ -57,7 +57,7 @@
                         </Style.Triggers>
                     </Style>
                     <Style x:Key="ShowOnSerial" TargetType="{x:Type RowDefinition}">
-                        <Setter Property="Height" Value="Auto" />
+                        <Setter Property="Height" Value="0" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ServoCatOptions.ConnectionType}" Value="1">
                                 <Setter Property="Height" Value="Auto" />
@@ -71,7 +71,7 @@
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="0" Style="{StaticResource ShowOnSerial}" />
+                    <RowDefinition Style="{StaticResource ShowOnSerial}" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -274,7 +274,7 @@
                     Margin="3"
                     IsChecked="{Binding ServoCatOptions.EnableSerialLogging}" />
             </Grid>
-        </GroupBox>        
+        </GroupBox>
         <GroupBox Grid.Row="0" Grid.Column="1" Grid.RowSpan="4" Margin="2">
             <GroupBox.Header>
                 <Grid Height="36" Margin="5">
@@ -741,8 +741,6 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Margin="2,10,2,10"
-                        Checked="HorizontalToggleSwitch_Toggled"
-                        Unchecked="HorizontalToggleSwitch_Toggled"
                         IsEnabled="{Binding ServoCatDevice.IsConnected, Converter={StaticResource InverseBooleanConverter}}"
                         IsChecked="{Binding ServoCatOptions.UseSpeed1}" />
                 </StackPanel>

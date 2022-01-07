@@ -51,9 +51,5 @@ namespace ASCOM.ghilios.ServoCAT.View {
         public int ValidationErrors { get; set; }
 
         public static DependencyProperty ValidationErrorsProperty { get; private set; }
-
-        private void HorizontalToggleSwitch_Toggled(object sender, RoutedEventArgs e) {
-            MessageBox.Show("The speed switch doesn't change anything on the ServoCAT. Make sure the setting matches the physical switch on the device.", "For your information", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
     }
 }
