@@ -76,6 +76,8 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
     public interface IServoCatDevice {
         bool IsConnected { get; }
 
+        FirmwareVersion FirmwareVersion { get; }
+
         Task Close(CancellationToken ct);
 
         Task Open(IChannel channel, CancellationToken ct);

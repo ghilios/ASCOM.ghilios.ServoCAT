@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using System;
 using System.IO;
 using System.IO.Ports;
 using System.Threading;
@@ -84,6 +85,8 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 var writeTask = Task.Run(() => serialPort.Write(buffer, offset, count), ct);
                 await Task.WhenAny(tcs.Task, writeTask);
                 ct.ThrowIfCancellationRequested();
+
+                await writeTask;
             }
         }
     }

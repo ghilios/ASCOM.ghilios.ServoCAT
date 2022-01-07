@@ -89,13 +89,14 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             return Task.CompletedTask;
         }
 
-        public Task FlushReadExisting(CancellationToken ct) {
+        public Task<byte[]> FlushReadExisting(CancellationToken ct) {
             var length = (int)memoryStream.Length;
             if (length > 0) {
                 var buffer = new byte[length];
                 memoryStream.Read(buffer, 0, length);
+                return Task.FromResult(buffer);
             }
-            return Task.CompletedTask;
+            return Task.FromResult(new byte[0]);
         }
 
         public Task Open(CancellationToken ct) {

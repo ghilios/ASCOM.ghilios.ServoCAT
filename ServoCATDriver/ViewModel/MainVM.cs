@@ -139,19 +139,42 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
         }
 
         private void ToggleConnect(object o) {
+            if (Connecting) {
+                Logger.LogMessage("ToggleConnect", "Aborting ToggleConnect since a connection is already in progress");
+                return;
+            }
+
             if (ConnectedDirectly) {
                 Stop();
-                return;
             } else {
                 ConnectAndStartPolling();
                 ConnectedDirectly = true;
             }
         }
 
+        private bool connecting;
+
+        public bool Connecting {
+            get => connecting;
+            private set {
+                if (connecting != value) {
+                    connecting = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
         private void ConnectAndStartPolling() {
             this.deviceCts?.Cancel();
+            Connecting = true;
             this.deviceCts = new CancellationTokenSource();
-            this.pollTask = Task.Run(() => ConnectAndPoll(this.deviceCts.Token));
+            this.pollTask = Task.Run(async () => {
+                try {
+                    await ConnectAndPoll(this.deviceCts.Token);
+                } finally {
+                    Connecting = false;
+                }
+            });
         }
 
         private void StopPolling() {
@@ -175,11 +198,14 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                 if (!SharedState.StartedByCOM) {
                     MessageBox.Show($"Failed to connect - {e.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+
+                await driverConnectionManager.Disconnect(deviceClientId, CancellationToken.None);
                 throw;
             }
 
             try {
                 Connected = true;
+                Connecting = false;
                 while (!ct.IsCancellationRequested) {
                     var status = await device.GetExtendedStatus(ct);
                     Tracking = status.MotionStatus.HasFlag(MotionStatusEnum.TRACK);

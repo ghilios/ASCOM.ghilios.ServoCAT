@@ -22,7 +22,7 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
 
         Task Close(CancellationToken ct);
 
-        Task FlushReadExisting(CancellationToken ct);
+        Task<byte[]> FlushReadExisting(CancellationToken ct);
 
         Task Write(byte[] data, CancellationToken ct);
 

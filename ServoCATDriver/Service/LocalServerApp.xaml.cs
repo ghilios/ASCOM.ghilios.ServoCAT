@@ -49,8 +49,6 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         private TraceLogger SerialLogger;
 
         private readonly object serverLock = new object();
-        private Task GCTask;
-        private CancellationTokenSource GCTokenSource;
 
         public LocalServerApp() {
             InitializeComponent();
@@ -109,11 +107,6 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             // Register the class factories of the served objects
             ServerLogger.LogMessage("Main", $"Registering class factories");
             RegisterClassFactories();
-
-            // Start the garbage collection thread.
-            ServerLogger.LogMessage("Main", $"Starting garbage collection");
-            StartGarbageCollection(TimeSpan.FromSeconds(10));
-            ServerLogger.LogMessage("Main", $"Garbage collector thread started");
         }
 
         private void ServoCatOptions_PropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -160,7 +153,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         }
 
         protected override void OnExit(ExitEventArgs e) {
-            mainVM.Stop();
+            mainVM?.Stop();
 
             try {
                 ServerLogger.LogMessage("Main", "Revoking class factories");
@@ -168,13 +161,6 @@ namespace ASCOM.ghilios.ServoCAT.Service {
                 ServerLogger.LogMessage("Main", "Class factories revoked");
             } catch (Exception ex) {
                 ServerLogger.LogMessage("Main", $"Failed to revoke class factories: {ex}");
-            }
-
-            try {
-                ServerLogger.LogMessage("Main", $"Stopping garbage collector");
-                StopGarbageCollection();
-            } catch (Exception ex) {
-                ServerLogger.LogMessage("Main", $"Failed to stop garbage collector: {ex}");
             }
 
             try {

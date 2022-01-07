@@ -41,8 +41,8 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 DataBits = 8,
                 StopBits = StopBits.One,
                 Handshake = Handshake.None,
-                ReadTimeout = TimeSpan.FromSeconds(1),
-                WriteTimeout = TimeSpan.FromSeconds(1)
+                ReadTimeout = TimeSpan.FromSeconds(3),
+                WriteTimeout = TimeSpan.FromSeconds(3),
             };
         }
 
@@ -55,7 +55,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 StopBits = StopBits,
                 Handshake = Handshake,
                 ReadTimeout = (int)ReadTimeout.TotalMilliseconds,
-                WriteTimeout = (int)WriteTimeout.TotalMilliseconds,
+                WriteTimeout = (int)WriteTimeout.TotalMilliseconds
             };
         }
     }
@@ -95,6 +95,8 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 var connectTask = Task.Run(() => serialPort.Open(), ct);
                 await Task.WhenAny(tcs.Task, connectTask);
                 ct.ThrowIfCancellationRequested();
+
+                await connectTask;
             }
         }
 
@@ -142,17 +144,21 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             await serialPort.WriteSynchronous(data, 0, data.Length, ct);
         }
 
-        public async Task FlushReadExisting(CancellationToken ct) {
-            if (options.EnableSerialLogging) {
-                var bytesInBuffer = serialPort.BytesToRead;
-                if (bytesInBuffer > 0) {
-                    var discardBuffer = await serialPort.ReadSynchronous(bytesInBuffer, ct);
+        public async Task<byte[]> FlushReadExisting(CancellationToken ct) {
+            var bytesInBuffer = serialPort.BytesToRead;
+            byte[] discardBuffer;
+            if (bytesInBuffer > 0) {
+                discardBuffer = await serialPort.ReadSynchronous(bytesInBuffer, ct);
+                if (options.EnableSerialLogging) {
                     var discardBufferString = BitConverter.ToString(discardBuffer);
                     var discardBufferASCIIString = Encoding.ASCII.GetString(discardBuffer);
                     serialLogger.LogMessage("FlushReadExisting", $"Discarded {bytesInBuffer} bytes. {discardBufferString} = {discardBufferASCIIString}");
                 }
+            } else {
+                discardBuffer = new byte[0];
             }
             serialPort.DiscardInBuffer();
+            return discardBuffer;
         }
     }
 }

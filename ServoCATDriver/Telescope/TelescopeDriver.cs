@@ -221,6 +221,8 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                     try {
                         var channel = driverConnectionManager.Connect(driverClientId, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)).Result;
                         AsyncContext.Run(() => servoCatDevice.Open(channel, SCTaskExtensions.TimeoutCancellationToken(sharedState.DeviceConnectionTimeout)));
+                        disconnectTokenSource = new CancellationTokenSource();
+                        servoCatFirmwareVersion = servoCatDevice.FirmwareVersion;
                     } catch (Exception e) {
                         LogException("Connected Set", "Failed to connect", e);
                         try {
@@ -230,8 +232,6 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                         }
                         throw;
                     }
-                    disconnectTokenSource = new CancellationTokenSource();
-                    servoCatFirmwareVersion = AsyncContext.Run(() => servoCatDevice.GetVersion(disconnectTokenSource.Token));
                     connectedState = true;
                 } else {
                     try {
@@ -534,11 +534,8 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public bool DoesRefraction {
             get {
-                return true;
-                /*
                 Logger.LogMessage("DoesRefraction Get", "Not implemented");
                 throw new PropertyNotImplementedException("DoesRefraction", false);
-                */
             }
             set {
                 Logger.LogMessage("DoesRefraction Set", "Not implemented");
