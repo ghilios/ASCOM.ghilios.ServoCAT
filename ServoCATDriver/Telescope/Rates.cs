@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using ASCOM.DeviceInterface;
+using ASCOM.ghilios.ServoCAT.Astrometry;
 using ASCOM.ghilios.ServoCAT.Interfaces;
 using System;
 using System.Collections;
@@ -104,14 +105,17 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return;
             }
 
-            var guideRate = options.UseSpeed1 ? axisConfig.GuideRatePerSecond1 : axisConfig.GuideRatePerSecond2;
+            // With speed set to 1, GuideSlow is Guide1, and GuideFast is 2x Guide1
+            // With speed set to 2, GuideSlow is 0.5x Guide2, and GuideFast is Guide2
+            var guideSlowRate = options.UseSpeed1 ? axisConfig.GuideRatePerSecond1 : Angle.ByDegree(0.5 * axisConfig.GuideRatePerSecond2.Degrees);
+            var guideFastRate = options.UseSpeed1 ? Angle.ByDegree(2.0 * axisConfig.GuideRatePerSecond1.Degrees) : axisConfig.GuideRatePerSecond2;
             var jogRate = options.UseSpeed1 ? axisConfig.JogRatePerSecond1 : axisConfig.JogRatePerSecond2;
             var slewRate = options.UseSpeed1 ? axisConfig.SlewRatePerSecond1 : axisConfig.SlewRatePerSecond2;
             this.axis = axis;
             this.rates = new Rate[] {
-                // TODO: Figure out what "Guide Slow" corresponds to
                 Rate.SingleValue(0),
-                Rate.SingleValue(guideRate.Degrees),
+                Rate.SingleValue(guideSlowRate.Degrees),
+                Rate.SingleValue(guideFastRate.Degrees),
                 Rate.SingleValue(jogRate.Degrees),
                 Rate.SingleValue(slewRate.Degrees)
             };

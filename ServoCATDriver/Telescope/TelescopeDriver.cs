@@ -612,16 +612,22 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
             Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched {direction} direction");
 
-            var guideRatePerSec = servoCatOptions.UseSpeed1 ? axisConfig.GuideRatePerSecond1 : axisConfig.GuideRatePerSecond2;
+            // With speed set to 1, GuideSlow is Guide1, and GuideFast is 2x Guide1
+            // With speed set to 2, GuideSlow is 0.5x Guide2, and GuideFast is Guide2
+            var guideSlowRate = servoCatOptions.UseSpeed1 ? axisConfig.GuideRatePerSecond1 : Angle.ByDegree(0.5 * axisConfig.GuideRatePerSecond2.Degrees);
+            var guideFastRate = servoCatOptions.UseSpeed1 ? Angle.ByDegree(2.0 * axisConfig.GuideRatePerSecond1.Degrees) : axisConfig.GuideRatePerSecond2;
             var jogRatePerSec = servoCatOptions.UseSpeed1 ? axisConfig.JogRatePerSecond1 : axisConfig.JogRatePerSecond2;
             var slewRatePerSec = servoCatOptions.UseSpeed1 ? axisConfig.SlewRatePerSecond1 : axisConfig.SlewRatePerSecond2;
             SlewRate moveRate;
             if (Math.Abs(rate) < Rate.RateEpsilon) {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched stop rate");
                 moveRate = SlewRate.STOP;
-            } else if (Math.Abs(guideRatePerSec.Degrees - rate) < Rate.RateEpsilon) {
-                Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched guide rate of {guideRatePerSec.DMS}/sec");
+            } else if (Math.Abs(guideSlowRate.Degrees - rate) < Rate.RateEpsilon) {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched guide rate of {guideSlowRate.DMS}/sec");
                 moveRate = SlewRate.GUIDE_SLOW;
+            } else if (Math.Abs(guideFastRate.Degrees - rate) < Rate.RateEpsilon) {
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched guide rate of {guideFastRate.DMS}/sec");
+                moveRate = SlewRate.GUIDE_FAST;
             } else if (Math.Abs(jogRatePerSec.Degrees - rate) < Rate.RateEpsilon) {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched job rate of {jogRatePerSec.DMS}/sec");
                 moveRate = SlewRate.JOG;
