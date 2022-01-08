@@ -622,16 +622,16 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             if (Math.Abs(rate) < Rate.RateEpsilon) {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched stop rate");
                 moveRate = SlewRate.STOP;
-            } else if (Math.Abs(guideSlowRate.Degrees - rate) < Rate.RateEpsilon) {
+            } else if (Math.Abs(guideSlowRate.Degrees - Math.Abs(rate)) < Rate.RateEpsilon) {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched guide rate of {guideSlowRate.DMS}/sec");
                 moveRate = SlewRate.GUIDE_SLOW;
-            } else if (Math.Abs(guideFastRate.Degrees - rate) < Rate.RateEpsilon) {
+            } else if (Math.Abs(guideFastRate.Degrees - Math.Abs(rate)) < Rate.RateEpsilon) {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched guide rate of {guideFastRate.DMS}/sec");
                 moveRate = SlewRate.GUIDE_FAST;
-            } else if (Math.Abs(jogRatePerSec.Degrees - rate) < Rate.RateEpsilon) {
+            } else if (Math.Abs(jogRatePerSec.Degrees - Math.Abs(rate)) < Rate.RateEpsilon) {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched job rate of {jogRatePerSec.DMS}/sec");
                 moveRate = SlewRate.JOG;
-            } else if (Math.Abs(slewRatePerSec.Degrees - rate) < Rate.RateEpsilon) {
+            } else if (Math.Abs(slewRatePerSec.Degrees - Math.Abs(rate)) < Rate.RateEpsilon) {
                 Logger.LogMessage("MoveAxis", $"{axis}({rate}) matched slew rate of {slewRatePerSec.DMS}/sec");
                 moveRate = SlewRate.SLEW;
             } else {
