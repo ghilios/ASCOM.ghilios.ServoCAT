@@ -196,9 +196,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                 await device.Open(channel, ct);
             } catch (Exception e) {
                 Logger.LogMessageCrLf("MainVM.ConnectAndPoll", $"Failed to connected - {e}");
-                if (!SharedState.StartedByCOM) {
-                    MessageBox.Show($"Failed to connect - {e.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                MessageBox.Show($"Failed to connect - {e.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
                 await driverConnectionManager.Disconnect(deviceClientId, CancellationToken.None);
                 throw;
@@ -233,9 +231,7 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                 throw;
             } catch (Exception e) {
                 Logger.LogMessageCrLf("MainVM.ConnectAndPoll", $"Failed - {e}");
-                if (!SharedState.StartedByCOM) {
-                    MessageBox.Show($"Communication failed - {e.Message}. Disconnecting", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                MessageBox.Show($"Communication failed - {e.Message}. Disconnecting", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             } finally {
                 ResetProperties();

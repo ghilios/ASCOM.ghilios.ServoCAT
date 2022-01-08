@@ -41,8 +41,8 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 DataBits = 8,
                 StopBits = StopBits.One,
                 Handshake = Handshake.None,
-                ReadTimeout = TimeSpan.FromSeconds(3),
-                WriteTimeout = TimeSpan.FromSeconds(3),
+                ReadTimeout = TimeSpan.FromSeconds(10),
+                WriteTimeout = TimeSpan.FromSeconds(10),
             };
         }
 

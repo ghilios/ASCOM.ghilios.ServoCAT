@@ -61,17 +61,21 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
                 success = this.TryGetValue(key, out lazy);
             }
 
-            if (!success) {
-                using (await synclock.WriterLockAsync(ct)) {
-                    if (!this.TryGetValue(key, out lazy)) {
-                        lazy = new LazyLock<T>();
-                        var policy = getCacheItemPolicyFunction();
-                        this.cache.Add(key, lazy, policy);
-                    }
-                }
+            if (success) {
+                return await lazy.GetAsync(loadFunction, ct);
             }
 
-            return await lazy.GetAsync(loadFunction);
+            using (await synclock.WriterLockAsync(ct)) {
+                if (!this.TryGetValue(key, out lazy)) {
+                    lazy = new LazyLock<T>();
+                    var result = await lazy.GetAsync(loadFunction, ct);
+                    var policy = getCacheItemPolicyFunction();
+                    this.cache.Add(key, lazy, policy);
+                    return result;
+                } else {
+                    return await lazy.GetAsync(loadFunction, ct);
+                }
+            }
         }
 
         public T GetOrAdd(string key, Func<T> loadFunction, Func<CacheItemPolicy> getCacheItemPolicyFunction) {
@@ -122,13 +126,13 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
                 mutex = new AsyncLock();
             }
 
-            public L Get(Func<L> activator) {
+            public L Get(Func<L> activator, CancellationToken ct) {
                 if (!got) {
                     if (activator == null) {
                         return default(L);
                     }
 
-                    using (mutex.Lock(CancellationToken.None)) {
+                    using (mutex.Lock(ct)) {
                         if (!got) {
                             value = activator();
 
@@ -140,13 +144,13 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
                 return value;
             }
 
-            public async Task<L> GetAsync(Func<Task<L>> activator) {
+            public async Task<L> GetAsync(Func<Task<L>> activator, CancellationToken ct) {
                 if (!got) {
                     if (activator == null) {
                         return default(L);
                     }
 
-                    using (await mutex.LockAsync(CancellationToken.None)) {
+                    using (await mutex.LockAsync(ct)) {
                         if (!got) {
                             value = await activator();
 
