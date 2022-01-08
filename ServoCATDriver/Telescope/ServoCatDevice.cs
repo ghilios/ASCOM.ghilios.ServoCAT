@@ -85,7 +85,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                     firmwareVersion = await GetVersionImpl(ct, false);
                     if (!options.FirmwareConfigLoaded) {
                         logger.LogMessage("ServoCatDevice", "Firmware config not previously loaded, so querying the device for it");
-                        options.FirmwareConfig.CopyFrom(await GetConfig(ct));
+                        options.FirmwareConfig.CopyFrom(await GetConfigImpl(ct, false));
                         options.FirmwareConfigLoaded = true;
                         options.Save();
                     }

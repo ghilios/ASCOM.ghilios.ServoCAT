@@ -188,6 +188,10 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             Dec = angle;
             Altitude = angle;
             Azimuth = angle;
+            Tracking = false;
+            AtPark = false;
+            IsSlewing = false;
+            IsAligned = false;
         }
 
         private async Task ConnectAndPoll(CancellationToken ct) {
