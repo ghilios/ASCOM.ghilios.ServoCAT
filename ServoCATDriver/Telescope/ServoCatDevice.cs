@@ -97,7 +97,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public async Task Close(CancellationToken ct) {
             initialized = false;
-            if (channel.IsOpen) {
+            if (channel?.IsOpen == true) {
                 await channel.Close(ct);
             }
             RaisePropertyChanged(nameof(IsConnected));

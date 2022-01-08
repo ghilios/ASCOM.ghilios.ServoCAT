@@ -19,7 +19,7 @@ namespace ASCOM.ghilios.ServoCAT.Service.Utility {
         private bool constructed = false;
 
         public ReferenceCountedObjectBase() {
-            LocalServerApp.App.IncrementObjectCount();
+            LocalServerApp.App?.IncrementObjectCount();
             constructed = true;
         }
 

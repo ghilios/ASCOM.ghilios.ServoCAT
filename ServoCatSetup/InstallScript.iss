@@ -57,14 +57,6 @@ Source: "..\ServoCATDriver\bin\Release\System.Runtime.CompilerServices.Unsafe.dl
 Source: "..\ServoCATDriver\bin\Release\ToggleSwitch.dll"; DestDir: "{app}"
 
 
-[Run]
-Filename: "{dotnet4032}\regasm.exe"; Parameters: "/codebase ""{app}\ASCOM.ghilios.ServoCAT.exe"""; Flags: runhidden 32bit
-Filename: "{dotnet4064}\regasm.exe"; Parameters: "/codebase ""{app}\ASCOM.ghilios.ServoCAT.exe"""; Flags: runhidden 64bit; Check: IsWin64
-
-[UninstallRun]
-Filename: "{dotnet4032}\regasm.exe"; Parameters: "-u ""{app}\ASCOM.ghilios.ServoCAT.exe"""; Flags: runhidden 32bit; RunOnceId: "ServoCat32"
-Filename: "{dotnet4064}\regasm.exe"; Parameters: "-u ""{app}\ASCOM.ghilios.ServoCAT.exe"""; Flags: runhidden 64bit; Check: IsWin64; RunOnceId: "ServoCat64"
-
 [Code]
 const
    REQUIRED_PLATFORM_VERSION = 6.2;    // Set this to the minimum required ASCOM Platform version for this application

@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using ASCOM.ghilios.ServoCAT.Service;
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -31,7 +32,10 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
                 window = GenerateWindow(title, resizeMode, windowStyle, null);
 
                 window.Content = content;
-                window.Owner = Application.Current.MainWindow;
+                var currentApp = LocalServerApp.App;
+                if (currentApp?.MainWindow?.IsActive == true) {
+                    window.Owner = currentApp.MainWindow;
+                }
                 window.Show();
             }));
         }
@@ -67,8 +71,7 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
                 window.CloseCommand = closeCommand;
             }
 
-            var mainwindow = Application.Current.MainWindow;
-
+            var mainwindow = LocalServerApp.App?.MainWindow;
             window.Closing += (object sender, CancelEventArgs e) => {
                 if ((sender is Window w) && w.IsFocused) {
                     mainwindow.Focus();
@@ -76,17 +79,19 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
             };
             window.Closed += (object sender, EventArgs e) => {
                 this.OnClosed?.Invoke(this, null);
-                mainwindow.Focus();
+                mainwindow?.Focus();
             };
-            window.ContentRendered += (object sender, EventArgs e) => {
-                var win = (System.Windows.Window)sender;
-                win.InvalidateVisual();
+            if (mainwindow?.IsActive == true) {
+                window.ContentRendered += (object sender, EventArgs e) => {
+                    var win = (System.Windows.Window)sender;
+                    win.InvalidateVisual();
 
-                var rect = mainwindow.GetAbsolutePosition();
-                win.Left = rect.Left + (rect.Width - win.ActualWidth) / 2;
-                win.Top = rect.Top + (rect.Height - win.ActualHeight) / 2;
-            };
-            window.Owner = mainwindow;
+                    var rect = mainwindow.GetAbsolutePosition();
+                    win.Left = rect.Left + (rect.Width - win.ActualWidth) / 2;
+                    win.Top = rect.Top + (rect.Height - win.ActualHeight) / 2;
+                };
+                window.Owner = mainwindow;
+            }
 
             return window;
         }

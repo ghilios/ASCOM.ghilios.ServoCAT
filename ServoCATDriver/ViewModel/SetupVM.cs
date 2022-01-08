@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Service;
 using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.ghilios.ServoCAT.View;
 using ASCOM.Utilities;
@@ -81,14 +82,16 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             return Application.Current.Dispatcher.Invoke(() => {
                 var optionsClone = servoCatOptions.Clone();
                 var setupVM = new SetupVM(sharedState, servoCatDevice, optionsClone, serialUtilities, logger);
-                var mainwindow = Application.Current.MainWindow;
+                var mainwindow = LocalServerApp.App?.MainWindow;
                 Window win = new Setup {
                     DataContext = setupVM,
                     Title = "ServoCAT Options",
                     WindowStyle = WindowStyle.ToolWindow
                 };
 
-                win.Owner = mainwindow;
+                if (mainwindow?.IsActive == true) {
+                    win.Owner = mainwindow;
+                }
                 win.Closed += (object sender, EventArgs e) => {
                     Application.Current.MainWindow.Focus();
                 };

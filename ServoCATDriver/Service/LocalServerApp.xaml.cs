@@ -182,7 +182,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             Current?.Shutdown();
         }
 
-        public static LocalServerApp App => (LocalServerApp)Current;
+        public static LocalServerApp App => Current as LocalServerApp;
 
         #region Command line argument processing
 
