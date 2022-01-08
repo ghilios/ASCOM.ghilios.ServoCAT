@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Exceptions;
 using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.Utilities;
@@ -226,6 +227,10 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
                 Logger.LogMessage("MainVM.ConnectAndPoll", $"Terminated");
             } catch (OperationCanceledException) {
                 Logger.LogMessage("MainVM.ConnectAndPoll", $"Terminated");
+            } catch (DSCNotConnectedException e) {
+                Logger.LogMessageCrLf("MainVM.ConnectAndPoll", $"Failed - {e}");
+                MessageBox.Show($"DSC not connected. Disconnecting", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
             } catch (Exception e) {
                 Logger.LogMessageCrLf("MainVM.ConnectAndPoll", $"Failed - {e}");
                 if (!SharedState.StartedByCOM) {

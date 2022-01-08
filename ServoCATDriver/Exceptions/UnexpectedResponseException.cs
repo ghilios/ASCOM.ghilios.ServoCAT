@@ -21,6 +21,12 @@ namespace ASCOM.ghilios.ServoCAT.Exceptions {
         }
     }
 
+    public class DSCNotConnectedException : Exception {
+
+        public DSCNotConnectedException() : base("DSC not connected") {
+        }
+    }
+
     public class UnexpectedResponseException : Exception {
 
         public UnexpectedResponseException(string message) : base(message) {

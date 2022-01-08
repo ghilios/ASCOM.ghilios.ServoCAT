@@ -15,6 +15,7 @@ using ASCOM.Astrometry.AstroUtils;
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.DeviceInterface;
 using ASCOM.ghilios.ServoCAT.Astrometry;
+using ASCOM.ghilios.ServoCAT.Exceptions;
 using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.ghilios.ServoCAT.Service;
 using ASCOM.ghilios.ServoCAT.Service.Utility;
@@ -141,6 +142,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 throw;
             } catch (EndOfStreamException e) {
                 Logger.LogMessageCrLf("DeviceActionWithTimeout", $"Reached end of stream while reading from device. Disconnecting. {e}");
+                _ = Task.Run(() => Connected = false);
+                throw;
+            } catch (DSCNotConnectedException) {
+                Logger.LogMessageCrLf("DeviceActionWithTimeout", "DSC not connected. Disconnecting.");
                 _ = Task.Run(() => Connected = false);
                 throw;
             } catch (OperationCanceledException e) {

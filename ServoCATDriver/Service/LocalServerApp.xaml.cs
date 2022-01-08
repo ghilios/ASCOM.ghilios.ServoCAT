@@ -553,40 +553,6 @@ namespace ASCOM.ghilios.ServoCAT.Service {
 
         #endregion
 
-        #region Garbage collection support
-
-        /// <summary>
-        /// Start a garbage collection thread that can be cancelled
-        /// </summary>
-        /// <param name="interval">Frequency of garbage collections</param>
-        private void StartGarbageCollection(TimeSpan interval) {
-            ServerLogger.LogMessage("StartGarbageCollection", $"Creating garbage collector with interval: {interval}");
-            var garbageCollector = new GarbageCollection(interval);
-
-            ServerLogger.LogMessage("StartGarbageCollection", $"Starting garbage collector thread");
-            GCTokenSource = new CancellationTokenSource();
-            GCTask = Task.Factory.StartNew(() => garbageCollector.GCWatch(GCTokenSource.Token), GCTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            ServerLogger.LogMessage("StartGarbageCollection", $"Garbage collector thread started OK");
-        }
-
-        /// <summary>
-        /// Stop the garbage collection task by sending it the cancellation token and wait for the task to complete
-        /// </summary>
-        private void StopGarbageCollection() {
-            // Signal the garbage collector thread to stop
-            ServerLogger.LogMessage("StopGarbageCollection", $"Stopping garbage collector thread");
-            GCTokenSource?.Cancel();
-            GCTask?.Wait();
-            ServerLogger.LogMessage("StopGarbageCollection", $"Garbage collector thread stopped OK");
-
-            // Clean up
-            GCTask = null;
-            GCTokenSource?.Dispose();
-            GCTokenSource = null;
-        }
-
-        #endregion
-
         #region kernel32.dll and user32.dll functions
 
         // Post a Windows Message to a specific thread (identified by its thread id). Used to post a WM_QUIT message to the main thread in order to terminate this application.)

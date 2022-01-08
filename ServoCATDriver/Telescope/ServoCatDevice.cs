@@ -18,6 +18,7 @@ using ASCOM.Utilities;
 using Ninject;
 using Nito.AsyncEx;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -182,7 +183,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 EnsureChannelOpen();
                 await FlushDataBeforeRequest(ct);
 
+                var stopWatch = Stopwatch.StartNew();
                 var response = await SendCommandFixedResponse(new byte[] { 0x0E }, 20, ct);
+                stopWatch.Stop();
+
                 var expectedXor = response[19];
                 var actualXor = XORResponse(response, 1, 18);
                 if (expectedXor != actualXor) {
@@ -200,6 +204,12 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 var decDegreesFractional = GetUIntFromRange(response, 14, 4);
 
                 var motionStatus = (MotionStatusEnum)response[18];
+                if (raHoursWhole == 0 && raHoursFractional == 0 && decDegreesWhole == 0 && decDegreesFractional == 0
+                    && motionStatus == MotionStatusEnum.NONE && stopWatch.Elapsed > TimeSpan.FromSeconds(2)) {
+                    serialLogger.LogMessage("GetExtendedStatus", "DSC doesn't seem to be connected. The RA/DEC position is 0 and the request took longer than 2 seconds");
+                    throw new DSCNotConnectedException();
+                }
+
                 var ra = Angle.ByHours((double)raHoursWhole + (double)raHoursFractional / 100000.0d);
                 var dec = Angle.ByDegree(((double)decDegreesWhole + (double)decDegreesFractional / 10000.0d) * (sign ? 1 : -1));
                 var coordinates = new ICRSCoordinates(ra, dec, Epoch.J2000);
