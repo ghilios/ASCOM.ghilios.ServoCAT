@@ -643,7 +643,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return servoCatDevice.Move(direction, moveRate, ct);
             });
             if (!result) {
-                Logger.LogMessage("MoveAxis", "{axis}({rate}) Failed. Device reported error");
+                Logger.LogMessage("MoveAxis", $"{axis}({rate}) Failed. Device reported error");
                 throw new DriverException($"Driver reported MoveAxis failure");
             }
 
@@ -658,7 +658,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             AsyncContext.Run(() => WaitForStatusPredicate(ms => ms.HasFlag(MotionStatusEnum.PARK), servoCatOptions.SlewTimeout));
             Logger.LogMessage("Park", $"Completed with {result}");
 
-            // Update the cached status to Slewing immediately returns true
+            // Update the cached status so Slewing immediately returns true
             var status = GetTelescopeStatus();
             status.MotionStatus |= MotionStatusEnum.GOTO;
         }
