@@ -20,7 +20,6 @@
     x:Name="UC"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance localvm:SetupVM, IsDesignTimeCreatable=False}"
-    ContentRendered="Window_ContentRendered"
     SizeToContent="WidthAndHeight"
     Background="{StaticResource PrimaryBackgroundBrush}">
     <Grid>

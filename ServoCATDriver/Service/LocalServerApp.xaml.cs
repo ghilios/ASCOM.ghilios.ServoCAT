@@ -97,7 +97,8 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             mainVM = CompositionRoot.Kernel.Get<MainVM>();
 
             mainWindow = new Main();
-            mainWindow.WindowStyle = WindowStyle.ToolWindow;
+            App.MainWindow = mainWindow;
+            mainWindow.WindowStyle = WindowStyle.SingleBorderWindow;
             mainWindow.Title = "ServoCAT";
             mainWindow.DataContext = mainVM;
             if (!StartedByCOM) {
@@ -107,6 +108,14 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             // Register the class factories of the served objects
             ServerLogger.LogMessage("Main", $"Registering class factories");
             RegisterClassFactories();
+        }
+
+        private void ShowWindow() {
+            mainWindow.Show();
+        }
+
+        private void HideWindow() {
+            mainWindow.Hide();
         }
 
         private void ServoCatOptions_PropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -134,7 +143,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ServerLogger?.LogMessage("Main", $"{e.ClientGuid} disconnected. {clientCount} connected clients remaining");
             if (clientCount == 0 && StartedByCOM) {
                 ServerLogger.LogMessage("Main", $"Making main window hidden");
-                Dispatcher.Invoke(() => mainWindow.Hide());
+                Dispatcher.Invoke(HideWindow);
             }
         }
 
@@ -148,7 +157,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ServerLogger.LogMessage("Main", $"{e.ClientGuid} connected. {clientCount} connected clients");
             if (clientCount == 1 && StartedByCOM) {
                 ServerLogger.LogMessage("Main", $"Making main window visible");
-                Dispatcher.Invoke(() => mainWindow.Show());
+                Dispatcher.Invoke(ShowWindow);
             }
         }
 
@@ -540,12 +549,19 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public void ExitIf() {
             lock (serverLock) {
                 ServerLogger.LogMessage("ExitIf", $"Object count: {ObjectCount}, Server lock count: {serverLockCount}");
-                if ((ObjectCount <= 0) && (ServerLockCount <= 0)) {
-                    if (StartedByCOM) {
-                        ServerLogger.LogMessage("ExitIf", $"Server started by COM so shutting down the Windows message loop on the main process to end the local server.");
-                        var wParam = UIntPtr.Zero;
-                        var lParam = IntPtr.Zero;
-                        PostThreadMessage(mainThreadId, 0x0012, wParam, lParam);
+                if (StartedByCOM) {
+                    if ((ObjectCount <= 0) && (ServerLockCount <= 0)) {
+                        Task.Run(async () => {
+                            await Task.Delay(TimeSpan.FromSeconds(5));
+                            if ((ObjectCount <= 0) && (ServerLockCount <= 0)) {
+                                ServerLogger.LogMessage("ExitIf", $"Server started by COM so shutting down the Windows message loop on the main process to end the local server.");
+                                var wParam = UIntPtr.Zero;
+                                var lParam = IntPtr.Zero;
+                                PostThreadMessage(mainThreadId, 0x0012, wParam, lParam);
+                            } else {
+                                ServerLogger.LogMessage("ExitIf", $"Exit aborted due to new connection");
+                            }
+                        });
                     }
                 }
             }

@@ -21,14 +21,9 @@ namespace ASCOM.ghilios.ServoCAT.View {
     /// Interaction logic for Setup.xaml
     /// </summary>
     public partial class Setup : Window {
-        private object validationErrorsLock = new object();
 
         public Setup() {
             InitializeComponent();
-        }
-
-        private void Window_ContentRendered(object sender, System.EventArgs e) {
-            InvalidateVisual();
         }
 
         private void Button_OK_Click(object sender, RoutedEventArgs e) {

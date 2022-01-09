@@ -1,8 +1,8 @@
 [Setup]
 AppID={{4353892F-6F45-4802-A767-AB5A7ADAF783}
 AppName=ASCOM ServoCAT, by ghilios
-AppVerName=ASCOM ServoCAT, by ghilios 0.2
-AppVersion=0.2
+AppVerName=ASCOM ServoCAT, by ghilios 0.3
+AppVersion=0.3
 AppPublisher=George Hilios <ghilios@gmail.com>
 AppPublisherURL=mailto:ghilios@gmail.com
 AppSupportURL=https://github.com/ghilios/ASCOM.ghilios.ServoCAT/issues
@@ -30,7 +30,7 @@ Name: "{commoncf}\ASCOM\Uninstall\Telescope\ASCOM.ghilios.ServoCAT"
 Name: "{group}\ServoCAT ASCOM"; Filename: "{app}\ASCOM.ghilios.ServoCAT.exe"; IconFilename: "{app}\ServoCatLogo.ico"
 
 [Files]
-Source: "..\ServoCATDriver\bin\Release\ASCOM.ghilios.ServoCAT.exe"; DestDir: "{app}" ;AfterInstall: RegASCOM()
+Source: "..\ServoCATDriver\bin\Release\ASCOM.ghilios.ServoCAT.exe"; DestDir: "{app}"
 Source: "..\ServoCatLogo.ico"; DestDir: "{app}"
 Source: "..\ServoCATDriver\bin\Release\MathNet.Numerics.dll"; DestDir: "{app}"
 Source: "..\ServoCATDriver\bin\Release\MathNet.Spatial.dll"; DestDir: "{app}"
@@ -56,6 +56,11 @@ Source: "..\ServoCATDriver\bin\Release\System.Numerics.Vectors.dll"; DestDir: "{
 Source: "..\ServoCATDriver\bin\Release\System.Runtime.CompilerServices.Unsafe.dll"; DestDir: "{app}"
 Source: "..\ServoCATDriver\bin\Release\ToggleSwitch.dll"; DestDir: "{app}"
 
+[Run]
+Filename: "{app}\ASCOM.ghilios.ServoCAT.exe"; Parameters: "/register"
+
+[UninstallRun]
+Filename: "{app}\ASCOM.ghilios.ServoCAT.exe"; Parameters: "/unregister"; RunOnceId: "Unregister"
 
 [Code]
 const

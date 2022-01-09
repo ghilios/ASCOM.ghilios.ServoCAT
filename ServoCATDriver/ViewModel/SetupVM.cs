@@ -82,18 +82,18 @@ namespace ASCOM.ghilios.ServoCAT.ViewModel {
             return Application.Current.Dispatcher.Invoke(() => {
                 var optionsClone = servoCatOptions.Clone();
                 var setupVM = new SetupVM(sharedState, servoCatDevice, optionsClone, serialUtilities, logger);
-                var mainwindow = LocalServerApp.App?.MainWindow;
+                var mainwindow = LocalServerApp.App.MainWindow;
                 Window win = new Setup {
                     DataContext = setupVM,
                     Title = "ServoCAT Options",
-                    WindowStyle = WindowStyle.ToolWindow
+                    WindowStyle = WindowStyle.SingleBorderWindow
                 };
 
                 if (mainwindow?.IsActive == true) {
                     win.Owner = mainwindow;
                 }
                 win.Closed += (object sender, EventArgs e) => {
-                    Application.Current.MainWindow.Focus();
+                    mainwindow?.Focus();
                 };
 
                 if (win.ShowDialog() == true) {

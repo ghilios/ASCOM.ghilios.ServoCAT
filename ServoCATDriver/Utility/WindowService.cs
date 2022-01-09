@@ -74,7 +74,7 @@ namespace ASCOM.ghilios.ServoCAT.Utility {
             var mainwindow = LocalServerApp.App?.MainWindow;
             window.Closing += (object sender, CancelEventArgs e) => {
                 if ((sender is Window w) && w.IsFocused) {
-                    mainwindow.Focus();
+                    mainwindow?.Focus();
                 }
             };
             window.Closed += (object sender, EventArgs e) => {
