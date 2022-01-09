@@ -328,7 +328,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public AlignmentModes AlignmentMode {
             get {
-                var alignmentMode = AlignmentModes.algAltAz;
+                var alignmentMode = AlignmentModes.algGermanPolar;
                 Logger.LogMessage("AlignmentMode Get", $"Get - {alignmentMode}");
                 return alignmentMode;
             }
