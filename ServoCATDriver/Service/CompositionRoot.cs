@@ -24,6 +24,8 @@ using ASCOM.Utilities.Interfaces;
 using Ninject;
 using Ninject.Activation;
 using Ninject.Modules;
+using System;
+using System.Runtime.InteropServices;
 
 namespace ASCOM.ghilios.ServoCAT.Service {
 
@@ -59,9 +61,17 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         }
 
         private static IProfile CreateTelescopeProfile(IContext context) {
-            return new Profile() {
+            var profile = new Profile() {
                 DeviceType = nameof(Telescope.Telescope)
             };
+
+            var driverId = ((ProgIdAttribute)Attribute.GetCustomAttribute(typeof(Telescope.Telescope), typeof(ProgIdAttribute))).Value;
+            if (!profile.IsRegistered(driverId)) {
+                var assemblyTitleAttribute = Attribute.GetCustomAttribute(typeof(Telescope.Telescope), typeof(ServedClassNameAttribute));
+                string chooserName = ((ServedClassNameAttribute)assemblyTitleAttribute).DisplayName;
+                profile.Register(driverId, chooserName);
+            }
+            return profile;
         }
     }
 }

@@ -59,9 +59,6 @@ Source: "..\ServoCATDriver\bin\Release\ToggleSwitch.dll"; DestDir: "{app}"
 [Run]
 Filename: "{app}\ASCOM.ghilios.ServoCAT.exe"; Parameters: "/register"
 
-[UninstallRun]
-Filename: "{app}\ASCOM.ghilios.ServoCAT.exe"; Parameters: "/unregister"; RunOnceId: "Unregister"
-
 [Code]
 const
    REQUIRED_PLATFORM_VERSION = 6.2;    // Set this to the minimum required ASCOM Platform version for this application
