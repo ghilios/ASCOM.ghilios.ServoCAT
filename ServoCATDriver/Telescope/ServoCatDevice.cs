@@ -517,7 +517,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 EnsureChannelOpen();
                 await FlushDataBeforeRequest(ct);
 
-                var response = await SendCommandFixedResponse("D", 118, ct);
+                var response = await SendCommandFixedResponse("D", 119, ct);
                 using (var ms = new MemoryStream(response, false)) {
                     using (var br = new BinaryReader(ms)) {
                         var config = new ServoCatFirmwareConfig();
