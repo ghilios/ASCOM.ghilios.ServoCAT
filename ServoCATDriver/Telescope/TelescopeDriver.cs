@@ -414,9 +414,8 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public bool CanPulseGuide {
             get {
-                // TODO: Change to true after MoveAxis + PulseGuide support is added
-                Logger.LogMessage("CanPulseGuide", "Get - " + false.ToString());
-                return false;
+                Logger.LogMessage("CanPulseGuide", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -570,8 +569,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public double GuideRateDeclination {
             get {
-                Logger.LogMessage("GuideRateDeclination Get", "Not implemented");
-                throw new PropertyNotImplementedException("GuideRateDeclination", false);
+                var guideRate = servoCatOptions.FirmwareConfig.AltitudeConfig.GuideRateSlow(servoCatOptions.UseSpeed1);
+                var result = guideRate.Degrees;
+                Logger.LogMessage("GuideRateDeclination Get", result.ToString());
+                return result;
             }
             set {
                 Logger.LogMessage("GuideRateDeclination Set", "Not implemented");
@@ -581,8 +582,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public double GuideRateRightAscension {
             get {
-                Logger.LogMessage("GuideRateRightAscension Get", "Not implemented");
-                throw new PropertyNotImplementedException("GuideRateRightAscension", false);
+                var guideRate = servoCatOptions.FirmwareConfig.AzimuthConfig.GuideRateSlow(servoCatOptions.UseSpeed1);
+                var result = guideRate.Degrees;
+                Logger.LogMessage("GuideRateRightAscension Get", result.ToString());
+                return result;
             }
             set {
                 Logger.LogMessage("GuideRateRightAscension Set", "Not implemented");
@@ -592,12 +595,18 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public bool IsPulseGuiding {
             get {
-                Logger.LogMessage("IsPulseGuiding Get", "Not implemented");
-                throw new PropertyNotImplementedException("IsPulseGuiding", false);
+                var result = pulseGuideCount > 0;
+                Logger.LogMessage("IsPulseGuiding Get", result.ToString());
+                return result;
             }
         }
 
         public void MoveAxis(TelescopeAxes axis, double rate) {
+            Logger.LogMessage("MoveAxis", $"{axis}({rate}) - Start");
+            if (AtPark) {
+                throw new ASCOM.InvalidOperationException("Cannot move axis while at park");
+            }
+
             ServoCatFirmwareAxisConfig axisConfig;
             Direction direction;
             if (axis == TelescopeAxes.axisPrimary) {
@@ -663,10 +672,88 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             status.MotionStatus |= MotionStatusEnum.GOTO;
         }
 
-        public void PulseGuide(GuideDirections Direction, int Duration) {
-            // TODO: Add PulseGuide support
-            Logger.LogMessage("PulseGuide", "Not implemented");
-            throw new MethodNotImplementedException("PulseGuide");
+        private CancellationTokenSource pulseNorthSouthCts;
+        private Task pulseNorthSouthTask;
+        private CancellationTokenSource pulseEastWestCts;
+        private Task pulseEastWestTask;
+        private AsyncLock pulseNorthSouthLock = new AsyncLock();
+        private AsyncLock pulseEastWestLock = new AsyncLock();
+        private int pulseGuideCount = 0;
+
+        public void PulseGuide(GuideDirections direction, int duration) {
+            Logger.LogMessage("PulseGuide", $"({direction}, {duration} ms) - Start");
+            if (duration <= 0) {
+                throw new ASCOM.InvalidValueException("Duration must be position");
+            }
+            if (duration > 1000 * 60) {
+                throw new ASCOM.InvalidValueException("Duration cannot be longer than 1 minute");
+            }
+            if (AtPark) {
+                throw new ASCOM.InvalidOperationException("Cannot pulse guide while at park");
+            }
+
+            var moveDirection = direction.FromASCOM();
+            var durationSpan = TimeSpan.FromMilliseconds(duration);
+            // Back to back axis moves allowed, so this is async
+            _ = PulseGuideAsync(moveDirection, durationSpan);
+        }
+
+        private async Task PulseGuideAsync(Direction moveDirection, TimeSpan durationSpan) {
+            var isNorthSouth = moveDirection == Direction.North || moveDirection == Direction.South;
+            var directionLock = isNorthSouth ? pulseNorthSouthLock : pulseEastWestLock;
+            var newCts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+            using (await directionLock.LockAsync(newCts.Token)) {
+                var task = isNorthSouth ? pulseNorthSouthTask : pulseEastWestTask;
+                var cts = isNorthSouth ? pulseNorthSouthCts : pulseEastWestCts;
+                cts?.Cancel();
+                cts = null;
+                if (task != null) {
+                    // Wait for current pulse guide in the given direction to complete/cancel
+                    await task;
+                }
+
+                if (isNorthSouth) {
+                    pulseNorthSouthCts = newCts;
+                } else {
+                    pulseEastWestCts = newCts;
+                }
+                if (!await servoCatDevice.Move(moveDirection, SlewRate.GUIDE_SLOW, newCts.Token)) {
+                    Logger.LogMessage("PulseGuide", $"Starting PulseGuide({moveDirection}, {durationSpan}) failed");
+                    return;
+                }
+                Interlocked.Increment(ref pulseGuideCount);
+                var delayTask = Task.Delay(durationSpan, newCts.Token);
+                task = Task.Run(async () => {
+                    try {
+                        using (newCts.Token.Register(() => servoCatDevice.Move(moveDirection, SlewRate.STOP, CancellationToken.None))) {
+                            await delayTask;
+                            newCts.Token.ThrowIfCancellationRequested();
+                            await servoCatDevice.Move(moveDirection, SlewRate.STOP, newCts.Token);
+                            newCts.Token.ThrowIfCancellationRequested();
+                        }
+                    } catch (OperationCanceledException) {
+                        Logger.LogMessageCrLf("PulseGuide", $"PulseGuide({moveDirection}, {durationSpan}) canceled");
+                    } catch (Exception e) {
+                        Logger.LogMessageCrLf("PulseGuide", $"PulseGuide({moveDirection}, {durationSpan}) failed. {e}");
+                    } finally {
+                        Interlocked.Decrement(ref pulseGuideCount);
+                        Logger.LogMessage("PulseGuide", $"({moveDirection}, {durationSpan} ms) - Complete");
+
+                        if (isNorthSouth) {
+                            pulseNorthSouthTask = Task.CompletedTask;
+                            pulseNorthSouthCts = null;
+                        } else {
+                            pulseEastWestTask = Task.CompletedTask;
+                            pulseEastWestCts = null;
+                        }
+                    }
+                });
+                if (isNorthSouth) {
+                    pulseNorthSouthTask = task;
+                } else {
+                    pulseEastWestTask = task;
+                }
+            }
         }
 
         public double RightAscension {

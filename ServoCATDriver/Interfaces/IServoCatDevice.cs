@@ -65,6 +65,23 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         West = (byte)'W'
     }
 
+    public static class ServoCatDeviceExtensions {
+
+        public static Direction FromASCOM(this DeviceInterface.GuideDirections ascomGuideDirections) {
+            if (ascomGuideDirections == DeviceInterface.GuideDirections.guideNorth) {
+                return Direction.North;
+            } else if (ascomGuideDirections == DeviceInterface.GuideDirections.guideSouth) {
+                return Direction.South;
+            } else if (ascomGuideDirections == DeviceInterface.GuideDirections.guideEast) {
+                return Direction.East;
+            } else if (ascomGuideDirections == DeviceInterface.GuideDirections.guideWest) {
+                return Direction.West;
+            } else {
+                throw new InvalidValueException($"Invalid guide direction {ascomGuideDirections}");
+            }
+        }
+    }
+
     public enum SlewRate : byte {
         STOP = 0,
         GUIDE_SLOW = 1,

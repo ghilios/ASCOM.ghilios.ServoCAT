@@ -14,6 +14,7 @@ using ASCOM.DeviceInterface;
 using ASCOM.ghilios.ServoCAT.Astrometry;
 using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.ghilios.ServoCAT.Telescope;
+using ASCOM.ghilios.ServoCAT.Utility;
 using ASCOM.Utilities;
 using Ninject;
 using System;
@@ -231,7 +232,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 return;
             }
 
-            var rateValue = request[2];
+            var rateValue = request[2] - '0';
             if (rateValue < 0 || rateValue > 4) {
                 logger.LogMessage("MoveRequest", $"Failed - Unexpected rate {rateValue}");
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
@@ -239,12 +240,13 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                 return;
             }
 
-            double[] rates;
-            if (options.UseSpeed1) {
-                rates = new double[] { 0.0d, axisConfig.GuideRatePerSecond1.Degrees / 2.0d, axisConfig.GuideRatePerSecond1.Degrees, axisConfig.JogRatePerSecond1.Degrees, axisConfig.SlewRatePerSecond1.Degrees };
-            } else {
-                rates = new double[] { 0.0d, axisConfig.GuideRatePerSecond2.Degrees / 2.0d, axisConfig.GuideRatePerSecond2.Degrees, axisConfig.JogRatePerSecond2.Degrees, axisConfig.SlewRatePerSecond2.Degrees };
-            }
+            var rates = new double[] {
+                0.0d,
+                axisConfig.GuideRateSlow(options.UseSpeed1).Degrees,
+                axisConfig.GuideRateFast(options.UseSpeed1).Degrees,
+                axisConfig.JogRate(options.UseSpeed1).Degrees,
+                axisConfig.SlewRate(options.UseSpeed1).Degrees,
+            };
 
             var rate = positive ? rates[rateValue] : -rates[rateValue];
             simulatorTelescope.MoveAxis(axis, rate);
@@ -417,6 +419,7 @@ namespace ASCOM.ghilios.ServoCAT.IO {
                     WriteFirmwareSetting(bw, 11, firmwareConfig.AltitudeConfig.TrackDirectionPositive ? (short)1 : (short)0);
                     WriteFirmwareSetting(bw, 12, firmwareConfig.AltitudeConfig.GoToDirectionPositive ? (short)1 : (short)0);
                     WriteFirmwareSetting(bw, 13, firmwareConfig.EasyTrackSignValue);
+                    bw.Write('\r');
                 }
 
                 var responseBytes = ms.ToArray();

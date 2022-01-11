@@ -13,6 +13,7 @@
 using ASCOM.DeviceInterface;
 using ASCOM.ghilios.ServoCAT.Astrometry;
 using ASCOM.ghilios.ServoCAT.Interfaces;
+using ASCOM.ghilios.ServoCAT.Utility;
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -105,12 +106,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 return;
             }
 
-            // With speed set to 1, GuideSlow is Guide1, and GuideFast is 2x Guide1
-            // With speed set to 2, GuideSlow is 0.5x Guide2, and GuideFast is Guide2
-            var guideSlowRate = options.UseSpeed1 ? axisConfig.GuideRatePerSecond1 : Angle.ByDegree(0.5 * axisConfig.GuideRatePerSecond2.Degrees);
-            var guideFastRate = options.UseSpeed1 ? Angle.ByDegree(2.0 * axisConfig.GuideRatePerSecond1.Degrees) : axisConfig.GuideRatePerSecond2;
-            var jogRate = options.UseSpeed1 ? axisConfig.JogRatePerSecond1 : axisConfig.JogRatePerSecond2;
-            var slewRate = options.UseSpeed1 ? axisConfig.SlewRatePerSecond1 : axisConfig.SlewRatePerSecond2;
+            var guideSlowRate = axisConfig.GuideRateSlow(options.UseSpeed1);
+            var guideFastRate = axisConfig.GuideRateFast(options.UseSpeed1);
+            var jogRate = axisConfig.JogRate(options.UseSpeed1);
+            var slewRate = axisConfig.SlewRate(options.UseSpeed1);
             this.axis = axis;
             this.rates = new Rate[] {
                 Rate.SingleValue(0),
