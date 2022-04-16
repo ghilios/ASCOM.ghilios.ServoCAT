@@ -16,6 +16,8 @@ using ASCOM.ghilios.ServoCAT.Interfaces;
 using ASCOM.ghilios.ServoCAT.Utility;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -65,7 +67,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         internal static Rate SingleValue(double val) {
-            return new Rate(val, val);
+            return new Rate(val, val + double.Epsilon);
         }
 
         public bool Equals(double val) {
@@ -110,14 +112,12 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             var guideFastRate = axisConfig.GuideRateFast(options.UseSpeed1);
             var jogRate = axisConfig.JogRate(options.UseSpeed1);
             var slewRate = axisConfig.SlewRate(options.UseSpeed1);
-            this.axis = axis;
-            this.rates = new Rate[] {
-                Rate.SingleValue(0),
-                Rate.SingleValue(guideSlowRate.Degrees),
-                Rate.SingleValue(guideFastRate.Degrees),
-                Rate.SingleValue(jogRate.Degrees),
-                Rate.SingleValue(slewRate.Degrees)
+            var values = new List<double>() {
+                0.0d, guideSlowRate.Degrees, guideFastRate.Degrees, jogRate.Degrees, slewRate.Degrees
             };
+
+            this.axis = axis;
+            this.rates = values.Distinct().Select(r => Rate.SingleValue(r)).ToArray();
         }
 
         #region IAxisRates Members

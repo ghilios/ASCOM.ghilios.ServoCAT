@@ -321,6 +321,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
         }
 
         public void AbortSlew() {
+            if (AtPark) {
+                throw new ASCOM.InvalidOperationException("Cannot AbortSlew when AtPark is true");
+            }
+
             DeviceActionWithTimeout((ct) => {
                 return servoCatDevice.AbortMove(ct);
             });
@@ -603,6 +607,9 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public void MoveAxis(TelescopeAxes axis, double rate) {
             Logger.LogMessage("MoveAxis", $"{axis}({rate}) - Start");
+            if (!CanMoveAxis(axis)) {
+                throw new ASCOM.InvalidValueException($"Cannot move {axis}");
+            }
             if (AtPark) {
                 throw new ASCOM.InvalidOperationException("Cannot move axis while at park");
             }
@@ -658,18 +665,23 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             // Update the cached status to Slewing immediately returns true
             var status = GetTelescopeStatus();
-            status.MotionStatus |= MotionStatusEnum.USER_MOTION;
+            if (moveRate == SlewRate.STOP) {
+                status.MotionStatus &= ~MotionStatusEnum.USER_MOTION;
+            } else {
+                status.MotionStatus |= MotionStatusEnum.USER_MOTION;
+            }
         }
 
         public void Park() {
             Logger.LogMessage("Park", "Started");
             var result = DeviceActionWithTimeout(servoCatDevice.Park);
-            AsyncContext.Run(() => WaitForStatusPredicate(ms => ms.HasFlag(MotionStatusEnum.PARK), servoCatOptions.SlewTimeout));
-            Logger.LogMessage("Park", $"Completed with {result}");
 
             // Update the cached status so Slewing immediately returns true
             var status = GetTelescopeStatus();
             status.MotionStatus |= MotionStatusEnum.GOTO;
+
+            AsyncContext.Run(() => WaitForStatusPredicate(ms => ms.HasFlag(MotionStatusEnum.PARK), servoCatOptions.SlewTimeout));
+            Logger.LogMessage("Park", $"Completed with {result}");
         }
 
         private CancellationTokenSource pulseNorthSouthCts;
@@ -694,8 +706,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
             var moveDirection = direction.FromASCOM();
             var durationSpan = TimeSpan.FromMilliseconds(duration);
-            // Back to back axis moves allowed, so this is async
-            _ = PulseGuideAsync(moveDirection, durationSpan);
+            AsyncContext.Run(() => PulseGuideAsync(moveDirection, durationSpan));
         }
 
         private async Task PulseGuideAsync(Direction moveDirection, TimeSpan durationSpan) {
@@ -719,7 +730,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 }
                 if (!await servoCatDevice.Move(moveDirection, SlewRate.GUIDE_SLOW, newCts.Token)) {
                     Logger.LogMessage("PulseGuide", $"Starting PulseGuide({moveDirection}, {durationSpan}) failed");
-                    return;
+                    throw new DriverException("Pulse guide failed");
                 }
                 Interlocked.Increment(ref pulseGuideCount);
                 var delayTask = Task.Delay(durationSpan, newCts.Token);
@@ -814,6 +825,10 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
             set {
                 Logger.LogMessage("SiteElevation Set", $"Set - {value}");
+                if (value < -300 || value > 10000) {
+                    throw new ASCOM.InvalidValueException($"Cannot set SiteElevation to {value}. It must be between -300 and 10000.");
+                }
+
                 servoCatOptions.Elevation = value;
                 servoCatOptions.Save();
             }
@@ -1078,6 +1093,11 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             }
 
             var status = GetTelescopeStatus();
+            var atPark = status.MotionStatus.HasFlag(MotionStatusEnum.PARK);
+            if (atPark) {
+                throw new ASCOM.InvalidOperationException("Cannot SyncToCoordinates when AtPark is true");
+            }
+
             var currentPosition = status.TopocentricCoordinates;
             var currentCoordinates = status.CelestialCoordinates;
             var syncToCoordinates = new ICRSCoordinates(ra: Angle.ByHours(ra), dec: Angle.ByDegree(dec), epoch: GetEpoch());
@@ -1087,10 +1107,17 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             var difference = TopocentricDifference.Difference(currentPosition, syncToPosition);
             Logger.LogMessage("SyncToTarget", $"Offset with angle {difference.RotationAngle.DMS} applied");
             sharedState.SyncOffset = difference;
+            TargetRightAscension = ra;
+            TargetDeclination = dec;
         }
 
         public void SyncToTarget() {
             var status = GetTelescopeStatus();
+            var atPark = status.MotionStatus.HasFlag(MotionStatusEnum.PARK);
+            if (atPark) {
+                throw new ASCOM.InvalidOperationException("Cannot SyncToCoordinates when AtPark is true");
+            }
+
             var currentPosition = status.TopocentricCoordinates;
             var currentCoordinates = status.CelestialCoordinates;
             var targetCoordinates = TargetCoordinates;
@@ -1165,6 +1192,14 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                         return servoCatDevice.DisableTracking(Axis.BOTH, ct);
                     }
                 });
+
+                var status = GetTelescopeStatus();
+                if (value) {
+                    status.MotionStatus |= MotionStatusEnum.TRACK;
+                } else {
+                    status.MotionStatus &= ~MotionStatusEnum.TRACK;
+                }
+
                 Logger.LogMessage("Tracking Set", $"Completed with {result}");
             }
         }

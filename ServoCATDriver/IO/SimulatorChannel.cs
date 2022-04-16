@@ -269,23 +269,39 @@ namespace ASCOM.ghilios.ServoCAT.IO {
             try {
                 var requestString = Encoding.ASCII.GetString(request);
                 if (requestString.Substring(0, abortMoveCommand.Length) == abortMoveCommand) {
-                    simulatorTelescope.AbortSlew();
+                    if (!simulatorTelescope.AtPark) {
+                        simulatorTelescope.AbortSlew();
+                    }
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                    await WriteResponse(new byte[] { (byte)'X' });
                     return;
                 }
 
                 var raHours = double.Parse(requestString.Substring(1, 8));
                 var sign = requestString[10] == '+' ? 1 : -1;
                 var decDegrees = double.Parse(requestString.Substring(11, 7)) * sign;
+
+                // ServoCAT has no notion of slewing to AltAz. Tracking must be off for that to work properly, so temporarily
+                // enable tracking and disable afterwards to emulate it
+                var disableTrackingAfter = false;
+                if (!simulatorTelescope.Tracking) {
+                    simulatorTelescope.Tracking = true;
+                    disableTrackingAfter = true;
+                }
+
                 simulatorTelescope.SlewToCoordinatesAsync(RightAscension: raHours, Declination: decDegrees);
+                if (disableTrackingAfter) {
+                    simulatorTelescope.Tracking = false;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WriteResponse(new byte[] { (byte)'G' });
             } catch (Exception e) {
                 logger.LogMessage("GotoExtendedPrecisionRequest", $"Failed - {e.Message}");
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
                 await WriteResponse(new byte[] { (byte)'X' });
                 return;
             }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
-            await WriteResponse(new byte[] { (byte)'G' });
         }
 
         private async Task GotoLegacyRequest(byte[] request) {
