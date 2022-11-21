@@ -102,6 +102,27 @@
                     ItemsSource="{Binding AvailableCOMPorts}"
                     IsEnabled="{Binding ServoCatDevice.IsConnected, Converter={StaticResource InverseBooleanConverter}}"
                     SelectedItem="{Binding ServoCatOptions.SerialPort}" />
+                <TextBlock
+                    Grid.Row="2" Grid.Column="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Margin="5,5,0,0"
+                    Text="Alignment"
+                    Style="{StaticResource PropertyTextLabel}" />
+                <ComboBox
+                    Grid.Row="2" Grid.Column="1"
+                    Margin="5,5,0,0"
+                    Name="PART_AlignmentModeList"
+                    MinWidth="120"
+                    IsEnabled="{Binding ServoCatDevice.IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                    ItemsSource="{Binding Source={util:EnumBindingSource {x:Type interfaces:AlignmentMode}}}"
+                    SelectedItem="{Binding ServoCatOptions.AlignmentMode}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource EnumStaticDescriptionValueConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
             </Grid>
         </GroupBox>
         <GroupBox Grid.Row="1" Grid.Column="0" Grid.IsSharedSizeScope="True" Margin="2">

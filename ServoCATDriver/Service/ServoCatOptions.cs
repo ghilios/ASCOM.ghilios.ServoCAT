@@ -55,6 +55,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             EnableServerLogging = ascomProfile.GetBool(driverId, "enableServerLogging", connectionSettingsKey, true);
             EnableTelescopeLogging = ascomProfile.GetBool(driverId, "enableTelescopeLogging", connectionSettingsKey, true);
             EnableSerialLogging = ascomProfile.GetBool(driverId, "enableSerialLogging", connectionSettingsKey, true);
+            AlignmentMode = ascomProfile.GetEnum(driverId, "alignmentMode", astrometrySettingKey, AlignmentMode.AltAz);
             LoadFirmwareConfig();
         }
 
@@ -73,6 +74,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             ascomProfile.WriteBool(driverId, "enableServerLogging", connectionSettingsKey, EnableServerLogging);
             ascomProfile.WriteBool(driverId, "enableTelescopeLogging", connectionSettingsKey, EnableTelescopeLogging);
             ascomProfile.WriteBool(driverId, "enableSerialLogging", connectionSettingsKey, EnableSerialLogging);
+            ascomProfile.WriteEnum(driverId, "alignmentMode", astrometrySettingKey, AlignmentMode);
             SaveFirmwareConfig();
         }
 
@@ -138,6 +140,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
             this.EnableServerLogging = servoCatOptions.EnableServerLogging;
             this.EnableTelescopeLogging = servoCatOptions.EnableTelescopeLogging;
             this.EnableSerialLogging = servoCatOptions.EnableSerialLogging;
+            this.AlignmentMode = servoCatOptions.AlignmentMode;
         }
 
         public IServoCatOptions Clone() {
@@ -170,5 +173,7 @@ namespace ASCOM.ghilios.ServoCAT.Service {
         public bool EnableServerLogging { get; set; }
         public bool EnableTelescopeLogging { get; set; }
         public bool EnableSerialLogging { get; set; }
+
+        public AlignmentMode AlignmentMode { get; set; }
     }
 }

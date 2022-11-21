@@ -16,50 +16,53 @@ using System;
 namespace ASCOM.ghilios.ServoCAT.Astrometry {
 
     public class TopocentricDifference {
+        public static readonly TopocentricDifference ZERO = new TopocentricDifference(Angle.ZERO, Angle.ZERO);
 
-        public static readonly TopocentricDifference ZERO = new TopocentricDifference(
-            new Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
-
-        private readonly Quaternion rotation;
         public Angle RotationAngle { get; private set; }
+        public Angle AltDelta { get; private set; }
+        public Angle AzDelta { get; private set; }
 
-        public TopocentricDifference(Quaternion rotation) {
-            this.rotation = rotation;
-            RotationAngle = Angle.ByRadians(Math.Acos(rotation.Real));
+        public TopocentricDifference(Angle altDelta, Angle azDelta) {
+            this.AltDelta = altDelta;
+            this.AzDelta = azDelta;
+            this.RotationAngle = CalculateRotationAngle(altDelta: altDelta, azDelta: azDelta);
+        }
+
+        private static Angle CalculateRotationAngle(Angle altDelta, Angle azDelta) {
+            var now = DateTime.Now;
+            var offset = new TopocentricCoordinates(altDelta, azDelta, Angle.ZERO, Angle.ZERO, 0.0, now).ToUnitCartesian();
+            var zero = new TopocentricCoordinates(Angle.ZERO, Angle.ZERO, Angle.ZERO, Angle.ZERO, 0.0d, now).ToUnitCartesian();
+            return Angle.ByRadians(offset.AngleTo(zero).Radians);
         }
 
         public TopocentricCoordinates Rotate(TopocentricCoordinates tc, bool negate) {
-            // https://stackoverflow.com/questions/57185542/3d-rotation-using-system-numerics-quaternion
-            var cartesian = tc.ToUnitCartesian();
-            var rotationToUse = negate ? rotation.Negate() : rotation;
-            var rotatedQuaternion = rotationToUse * new Quaternion(0, cartesian.X, cartesian.Y, cartesian.Z) * rotationToUse.Conjugate();
-            var rotatedCartesian = new Vector3D(rotatedQuaternion.ImagX, rotatedQuaternion.ImagY, rotatedQuaternion.ImagZ).Normalize().ToVector3D();
-            return TopocentricCoordinates.FromUnitCartesian(
-                coords: rotatedCartesian,
-                latitude: tc.Latitude,
-                longitude: tc.Longitude,
-                elevation: tc.Elevation,
-                referenceDateTime: tc.ReferenceDateTime);
+            var negateFactor = negate ? -1.0d : 1.0d;
+            var azDelta = this.AzDelta.Radians * negateFactor;
+            var altDelta = this.AltDelta.Radians * negateFactor;
+
+            var targetAlt = tc.Altitude.Radians + altDelta;
+            var targetAz = tc.Azimuth.Radians + azDelta;
+            if (targetAlt > Angle.HALF_PI) {
+                targetAz += Math.PI;
+                targetAlt = Math.PI - targetAlt;
+            } else if (targetAlt < -Angle.HALF_PI) {
+                targetAz += Math.PI;
+                targetAlt = targetAlt - Math.PI;
+            }
+
+            var azAngle = Angle.ByRadians(targetAz).ToNormal();
+            var altAngle = Angle.ByRadians(targetAlt);
+            return new TopocentricCoordinates(altitude: altAngle, azimuth: azAngle, latitude: tc.Latitude, longitude: tc.Longitude, elevation: tc.Elevation, referenceDateTime: tc.ReferenceDateTime);
         }
 
         public static TopocentricDifference Difference(TopocentricCoordinates lhs, TopocentricCoordinates rhs) {
-            // https://math.stackexchange.com/questions/114107/determine-the-rotation-necessary-to-transform-one-point-on-a-sphere-to-another
-            var lhsCartesian = lhs.ToUnitCartesian();
-            var rhsCartesian = rhs.ToUnitCartesian();
-            var crossProduct = lhsCartesian.CrossProduct(rhsCartesian).Normalize().ToVector3D();
-            if (double.IsNaN(crossProduct.X)) {
-                // Cross product is NaN if the vectors are coincident
-                return ZERO;
-            }
-
-            var theta = Math.Acos(lhsCartesian.DotProduct(rhsCartesian));
-            var imaginaryScale = Math.Sin(theta / 2);
-            var quaternion = new Quaternion(Math.Cos(theta / 2), crossProduct.X * imaginaryScale, crossProduct.Y * imaginaryScale, crossProduct.Z * imaginaryScale);
-            return new TopocentricDifference(quaternion);
+            return new TopocentricDifference(
+                altDelta: Angle.ByRadians(lhs.Altitude.Radians - rhs.Altitude.Radians),
+                azDelta: Angle.ByRadians(lhs.Azimuth.Radians - rhs.Azimuth.Radians));
         }
 
         public override string ToString() {
-            return $"Angle: {RotationAngle.DMS}, Axis: [{rotation.ImagX}, {rotation.ImagY}, {rotation.ImagZ}]";
+            return $"Angle: {RotationAngle.DMS}, AltDelta: {AltDelta.DMS}, AzDelta: {AzDelta.DMS}";
         }
     }
 }

@@ -23,6 +23,16 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         Serial
     }
 
+    [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
+    public enum AlignmentMode {
+
+        [Description("Alt/Az")]
+        AltAz,
+
+        [Description("Equatorial")]
+        Equatorial
+    }
+
     public interface IServoCatOptions {
 
         void Save();
@@ -52,5 +62,6 @@ namespace ASCOM.ghilios.ServoCAT.Interfaces {
         bool EnableTelescopeLogging { get; set; }
         bool EnableSerialLogging { get; set; }
         int DeviceUnexpectedResponseRetries { get; }
+        AlignmentMode AlignmentMode { get; }
     }
 }

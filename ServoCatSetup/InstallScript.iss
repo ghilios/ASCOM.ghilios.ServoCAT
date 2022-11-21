@@ -1,8 +1,8 @@
 [Setup]
 AppID={{4353892F-6F45-4802-A767-AB5A7ADAF783}
 AppName=ASCOM ServoCAT, by ghilios
-AppVerName=ASCOM ServoCAT, by ghilios 0.7
-AppVersion=0.7
+AppVerName=ASCOM ServoCAT, by ghilios 0.8
+AppVersion=0.8
 AppPublisher=George Hilios <ghilios@gmail.com>
 AppPublisherURL=mailto:ghilios@gmail.com
 AppSupportURL=https://github.com/ghilios/ASCOM.ghilios.ServoCAT/issues

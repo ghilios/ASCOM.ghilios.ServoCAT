@@ -305,6 +305,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                     var response = await SendCommandFixedResponse(commandBytes, 1, ct);
                     // The spec calls for a 'G' response for success, and 'X' for failure
                     if (response[0] == 'G') {
+                        await Task.Delay(TimeSpan.FromSeconds(1));
                         return true;
                     } else if (response[0] == 'X') {
                         return false;

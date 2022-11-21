@@ -332,7 +332,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
 
         public AlignmentModes AlignmentMode {
             get {
-                var alignmentMode = AlignmentModes.algGermanPolar;
+                var alignmentMode = this.servoCatOptions.AlignmentMode == Interfaces.AlignmentMode.AltAz ? AlignmentModes.algAltAz : AlignmentModes.algGermanPolar;
                 Logger.LogMessage("AlignmentMode Get", $"Get - {alignmentMode}");
                 return alignmentMode;
             }
@@ -1081,7 +1081,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
                 DateTime.Now);
 
             Logger.LogMessage("SyncToAltAz", $"Syncing current position {currentPosition} to target {syncToPosition}");
-            var difference = TopocentricDifference.Difference(currentPosition, syncToPosition);
+            var difference = TopocentricDifference.Difference(syncToPosition, currentPosition);
             Logger.LogMessage("SyncToAltAz", $"Offset with angle {difference.RotationAngle.DMS} applied");
             sharedState.SyncOffset = difference;
         }
@@ -1104,7 +1104,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             var syncToPosition = astrometryConverter.ToTopocentric(syncToCoordinates);
 
             Logger.LogMessage("SyncToTarget", $"Syncing current position {currentCoordinates} to target {syncToPosition}");
-            var difference = TopocentricDifference.Difference(currentPosition, syncToPosition);
+            var difference = TopocentricDifference.Difference(syncToPosition, currentPosition);
             Logger.LogMessage("SyncToTarget", $"Offset with angle {difference.RotationAngle.DMS} applied");
             sharedState.SyncOffset = difference;
             TargetRightAscension = ra;
@@ -1125,7 +1125,7 @@ namespace ASCOM.ghilios.ServoCAT.Telescope {
             Logger.LogMessage("SyncToTarget", $"Syncing current position {currentCoordinates} to target {targetCoordinates}");
             var syncToPosition = astrometryConverter.ToTopocentric(targetCoordinates);
 
-            var difference = TopocentricDifference.Difference(currentPosition, syncToPosition);
+            var difference = TopocentricDifference.Difference(syncToPosition, currentPosition);
             Logger.LogMessage("SyncToTarget", $"Offset with angle {difference.RotationAngle.DMS} applied");
             sharedState.SyncOffset = difference;
         }
